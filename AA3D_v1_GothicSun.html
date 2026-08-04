@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Antarctic Anomaly 3D</title>
+    <style>
+        body {
+            margin: 0; padding: 0; overflow: hidden; background-color: #000;
+            font-family: Arial, sans-serif; user-select: none;
+        }
+        #gameCanvas {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: block;
+        }
+        #uiLayer {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 10;
+        }
+        /* UI Elements */
+        #preInitScreen {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #000; color: #FFF; pointer-events: auto;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-family: 'Courier New', Courier, monospace; cursor: pointer;
+            z-index: 200; text-shadow: 2px 2px 0 #F00;
+        }
+        #initScreen {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #000; color: #FFF; pointer-events: auto;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            font-family: 'Courier New', Courier, monospace; cursor: pointer;
+            z-index: 100;
+        }
+        .init-text {
+            font-size: 30px; text-shadow: 2px 2px 0 #F00; margin-top: 20px; text-align: center;
+        }
+        #titleScreen {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: transparent; pointer-events: auto;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #titleContent {
+            display: flex; flex-direction: column; align-items: center; background: transparent;
+        }
+        #pauseScreen, #deathScreen, #endScreen {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.6); pointer-events: auto;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        #titleText {
+            font-size: 60px; font-weight: bold; color: #FFF; text-shadow: 4px 4px 0 #F00;
+            margin-bottom: 20px; font-family: 'Courier New', Courier, monospace;
+        }
+        .skroll-container {
+            width: 400px; height: 250px; overflow: hidden; border: 2px solid red;
+            background: rgba(0, 0, 0, 0.8); margin-bottom: 20px; position: relative;
+        }
+        .skroll-text {
+            color: red; font-family: serif; font-size: 20px; line-height: 1.5;
+            position: absolute; width: 100%; text-align: center;
+            animation: scrollUp 40s linear infinite; padding: 0 10px; box-sizing: border-box;
+        }
+        @keyframes scrollUp {
+            0% { top: 100%; }
+            100% { top: -250%; } 
+        }
+        .btn {
+            background: #F00; color: #FFF; border: 2px solid #FFF; padding: 10px 20px;
+            font-size: 20px; cursor: pointer; font-family: 'Courier New', Courier, monospace;
+            text-transform: uppercase; margin: 10px;
+        }
+        .btn:hover { background: #900; }
+        .btn:disabled { background: #555; color: #888; border-color: #888; cursor: not-allowed; }
+        
+        .bottom-btn {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .diff-container {
+            font-size: 20px; font-family: monospace; color: #FFF; background: rgba(0,0,0,0.8);
+            padding: 15px 30px; border: 2px solid #555; border-radius: 5px; margin-bottom: 20px;
+            text-align: left; width: 450px; box-sizing: border-box;
+        }
+        .diff-container label {
+            display: block; margin: 15px 0; cursor: pointer; transition: opacity 0.2s;
+        }
+        .diff-container input[type="radio"] {
+            margin-right: 15px; transform: scale(1.5); cursor: pointer;
+        }
+        .diff-container input[type="radio"]:disabled {
+            cursor: not-allowed;
+        }
+        .diff-container input[type="radio"]:disabled + span {
+            color: #888;
+        }
+
+        #hud {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none;
+            display: none;
+        }
+        #crosshair {
+            position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
+            border: 2px solid rgba(255,0,0,0.7); border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        #crosshair::after {
+            content: ''; position: absolute; top: 8px; left: 8px; width: 4px; height: 4px; background: red;
+        }
+        #radar {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 200px; height: 200px; border: 2px solid #0F0; border-radius: 50%;
+            background: rgba(0, 20, 0, 0.5); overflow: hidden;
+        }
+        #radar-center {
+            position: absolute; top: 50%; left: 50%; width: 8px; height: 8px;
+            background: #0F0; transform: translate(-50%, -50%); border-radius: 50%;
+        }
+        .radar-blip {
+            position: absolute; width: 8px; height: 8px; background: #F00;
+            border-radius: 50%; transform: translate(-50%, -50%);
+        }
+        #hydraHealthContainer {
+            position: absolute; bottom: 240px; left: 50%; transform: translateX(-50%);
+            width: 300px; display: none; flex-direction: column; gap: 5px;
+        }
+        .health-bar {
+            width: 100%; height: 20px; background: #F00; border: 2px solid #FFF; box-sizing: border-box;
+        }
+        #progressInfo {
+            position: absolute; top: 20px; left: 20px; color: #FFF; font-size: 24px;
+            font-family: 'Courier New', Courier, monospace; text-shadow: 2px 2px #000;
+        }
+        
+        canvas { image-rendering: pixelated; }
+    </style>
+</head>
+<body>
+
+<div id="uiLayer">
+    <div id="preInitScreen">
+        <div style="width: 300px; height: 30px; border: 2px solid #FFF; background: #222; position: relative;">
+            <div id="loadingBar" style="width: 0%; height: 100%; background: #F00;"></div>
+        </div>
+        <div id="loadingText" style="margin-top: 15px; font-size: 24px;">LOADING... 0%</div>
+        
+        <label id="muteLabel" style="margin-top: 30px; font-size: 22px; cursor: pointer; display: flex; align-items: center; z-index: 300;">
+            <input type="checkbox" id="muteToggle" style="transform: scale(1.5); margin-right: 12px; cursor: pointer;"> MUTE SOUND
+        </label>
+    </div>
+
+    <div id="initScreen">
+        <div class="skroll-container">
+            <div class="skroll-text" id="introSkroll">
+                Top secret satellites from your government have detected unusual biological anomalies in an unexplored part of the Antarctic continent. They've sent robotic probes but all have been disabled by electromagnetic interference. They suspect an enemy nation has setup a clandestine underground bio-weapons facility. You are being sent on a mission to investigate and eliminate the facility. You are equipped with several days of supplies, harpoon gun, anomaly detector, and remote mines for the final objective of the mission... Good Luck and Godspeed!
+            </div>
+        </div>
+        <div class="init-text">CLICK TO ACCEPT MISSION</div>
+    </div>
+
+    <div id="titleScreen">
+        <div id="titleContent">
+            <div id="titleText">ANTARCTIC ANOMALY 3D</div>
+            
+            <div class="diff-container" id="difficultySelect">
+                <label id="lblSci"><input type="radio" name="difficulty" value="0" id="radSci" checked> <span id="spanSci">Scientist (Easy)</span></label>
+                <label id="lblExp"><input type="radio" name="difficulty" value="1" id="radExp"> <span id="spanExp">Explorer (Medium)</span></label>
+                <label id="lblMar"><input type="radio" name="difficulty" value="2" id="radMar"> <span id="spanMar">Marine (Hard)</span></label>
+            </div>
+
+            <button class="btn" id="startBtn">Start Mission</button>
+            <div style="color: #AAA; margin-top: 15px; font-family: monospace; max-width: 300px; font-size: 14px; text-align: center;">Version 1.0, Aug 2026, Developed by GothicSun.</div>
+            <div style="color: #AAA; margin-top: 15px; font-family: monospace; max-width: 300px; font-size: 14px; text-align: center;">AI assisted a.k.a. 100 junior developers cramed in a box.</div>
+            <div style="color: #AAA; margin-top: 15px; font-family: monospace; max-width: 300px; font-size: 14px; text-align: center;">This game is dedicated to the explorers who never returned from Antarctica.</div>
+            <div style="color: #AAA; margin-top: 15px; font-family: monospace; max-width: 350px; font-size: 14px; text-align: center;">Do you like this game? Buy me a ko-fi!</div>
+            <div style="margin-top: 15px;">
+            <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support me on Ko-fi', '#72a4f2', 'A0Q024FNXK');kofiwidget2.draw();</script> 
+        </div>
+    </div>
+
+    <div id="pauseScreen" style="display: none;">
+        <div class="skroll-container">
+            <div class="skroll-text" id="levelSkroll"></div>
+        </div>
+        <button class="btn bottom-btn" id="continueBtn" style="display: none;">Continue</button>
+    </div>
+
+    <div id="deathScreen" style="display: none;">
+        <h1 style="color:red; font-family: monospace; font-size: 50px;">YOU DIED</h1>
+        <div class="skroll-container">
+            <div class="skroll-text" id="deathSkroll" style="animation-duration: 20s;"></div>
+        </div>
+        <button class="btn bottom-btn" id="restartBtn" style="display: none;">Return to Title</button>
+    </div>
+    
+    <div id="endScreen" style="display: none;">
+        <h1 style="color:white; font-family: monospace; font-size: 40px;" id="endTitle">MISSION COMPLETE</h1>
+        <div class="skroll-container">
+            <div class="skroll-text" id="endSkroll"></div>
+        </div>
+        <button class="btn bottom-btn" id="endBtn" style="display: none;">Return to Title</button>
+    </div>
+
+    <div id="hud">
+        <div id="progressInfo">Enemies: <span id="enemyCount">0</span>/<span id="enemyTotal">0</span></div>
+        <div id="crosshair"></div>
+        <div id="radar"><div id="radar-center"></div><div id="radar-blips"></div></div>
+        <div id="hydraHealthContainer">
+            <div id="hydraHealthBar" class="health-bar"></div>
+            <div id="hydraHealthBar2" class="health-bar" style="display:none;"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+    const SKROLLS = {
+        level1: "A helicopter has airdropped you on the edge of the ice shelf. You travel inland for two days following your detector. As you approach the detection site, you encounter a docile walrus colony. At the sight of you, the walruses become enraged and begin to attack! This is unnatural for these creatures. Something is amiss…",
+        level2: "With the bravest walruses dead, the rest scamper away. Your detector leads you to an ice cave. You work your way down into the darkness. The caves open into colossal chambers, enough to fit a city inside… You notice an odd smell. Suddenly, you hear a rumbling, a stampede. You turn to look... you see giant monsters... ugly... screaming... in sullied white fur. Your heart sinks and your body freezes in fear… seconds feel like minutes as you swing your harpoon gun up and switch to fully automatic mode...",
+        level3: "The yeti retreat in fear of your powerful weapon which laid waste to dozens of their kin. These yeti have DNA anomalies, like nothing seen on Earth... You continue following your detector towards a stronger signal. After 3 days, you reach the lowest part of the cave system and find a warm zone with a pool of water. As you peer through its sheen, you see deep ocean and a distant orange glow several fathoms below. You don your scuba gear and set your gun to spread shot. As you descend into the abyss, you see dark purple shadows dancing in the blackness, just outside of view. You look over your shoulder and within a blink, a giant yellow eye appears!",
+        level4: "The mindless giant squid do not fear your harpoons and swarm you with endless numbers. You extinguish the last of your harpoons as you rush towards the orange glow. As you approach it, you hear a humming, and the squid flee. Your detector begins to scream off the charts! You find a floating air pocket and it opens into a spacious volcanic chamber. You see lava flows, but something is wrong with them...",
+        level5: "The hydra twins are dead and the remaining heads twitch and gurgle their final moments. You return to the surface. You begin to hear the humming sound again. Louder than ever, it begins vibrating your bones. You see a sparkling light from above. It begins to descend. You see a mirror like disc settle before you. Your mind struggles to comprehend dream from an unraveling reality. A ramp door opens towards you... your eyes fall into a daze... a minute passes, your shock subsides, and your mind returns. You realize this open door is an invitation... But why?! You quickly begin to have second thoughts and remember your primary objective... your priorities are conflicted... either enter the unknown universe... or complete your mission and return home...",
+        endNormal: "The hydra gurgles and falls silent. You stand still staring wide-eyed at the dead creature while your mind absorbs this traumatic experience. You take a deep breath and return to an even keel. You biopsy the carcass for your government’s laboratories to research. As you start the journey home with a hero’s tale in mind, you discover that the detector was destroyed during the battle. You leave the frigid continent without knowing if the anomaly is truly gone...",
+        endOpt1: "Your choice to brave the unknown has led to a close encounter with an extraterrestrial. Your fear gives way to peace when the being embraces you. Your life will never be the same again...",
+        endOpt2: "Your fear overwhelms your mind and a choice is made to destroy that which confounds you. You intend to complete your mission no matter how extraordinary the circumstance. You set a mine under the disc. As you detonate it, a chain reaction occurs. The disc’s massive energy is released and the anomaly is no more...",
+        deathWalrus: "You slip and fall on the ice. A white tusk impales you with a thousand pounds of pressure. Your body is thrashed around between several walruses until your breath stops.",
+        deathYeti: "A yeti dismembers your arm with ease. You cry out in agony. Another bites a hunk of your leg and chews it grotesquely. You slip into shock and in your remaining seconds, all you can hear are the roars from these soulless beasts…",
+        deathSquid: "Your goggles are ripped off by a tentacle and you become blinded. You feel slimy tentacles wrap around you. A hard beak nudges on the nape of your neck. You feel a quick pinch. Your neck snaps and you are instantly killed…",
+        deathMine: "In your haste, you have neglected a mine you have laid. The concussive wave envelops your body. You see a flash of white light and nothing more…",
+        deathHydra: "An unexpected magnetic force pulls you towards the hydra. You underestimate its reach and a hydra head clenches its jaws on your leg. It lifts you several stories into the air and while another hydra head tugs you apart... Your entrails are strewn across the jagged rocks below..."
+    };
+
+    const DIFFICULTIES = [
+        { name: "Scientist", killReq: 4, activeReq: 8, hydras: 1, level5: false, speed: 1.0 },
+        { name: "Explorer", killReq: 8, activeReq: 16, hydras: 1, level5: false, speed: 1.0 },
+        { name: "Marine", killReq: 16, activeReq: 32, hydras: 2, level5: true, speed: 1.5 }
+    ];
+
+    function initDifficultyLocks() {
+        let progress = 0;
+        try {
+            progress = parseInt(localStorage.getItem('anomalyProgress_v6') || '0');
+        } catch(e) {}
+        if(isNaN(progress)) progress = 0;
+        
+        const radExp = document.getElementById('radExp');
+        const radMar = document.getElementById('radMar');
+        const lblExp = document.getElementById('lblExp');
+        const lblMar = document.getElementById('lblMar');
+
+        if (progress < 1) {
+            radExp.disabled = true;
+            document.getElementById('spanExp').innerText = "Explorer (Medium) [LOCKED]";
+            lblExp.style.opacity = "0.5";
+            lblExp.style.pointerEvents = "none";
+        } else {
+            radExp.disabled = false;
+            document.getElementById('spanExp').innerText = "Explorer (Medium)";
+            lblExp.style.opacity = "1";
+            lblExp.style.pointerEvents = "auto";
+        }
+
+        if (progress < 2) {
+            radMar.disabled = true;
+            document.getElementById('spanMar').innerText = "Marine (Hard) [LOCKED]";
+            lblMar.style.opacity = "0.5";
+            lblMar.style.pointerEvents = "none";
+        } else {
+            radMar.disabled = false;
+            document.getElementById('spanMar').innerText = "Marine (Hard)";
+            lblMar.style.opacity = "1";
+            lblMar.style.pointerEvents = "auto";
+        }
+    }
+    initDifficultyLocks();
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    const globalGain = audioCtx.createGain();
+    globalGain.connect(audioCtx.destination);
+    document.getElementById('muteToggle').addEventListener('change', (e) => {
+        globalGain.gain.value = e.target.checked ? 0 : 1;
+    });
+
+    let bgmNode = null;
+    
+    document.body.addEventListener('click', () => {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume().catch(() => {});
+        }
+    });
+
+    function createNoiseBuffer() {
+        const bufferSize = audioCtx.sampleRate * 2;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            output[i] = Math.random() * 2 - 1;
+        }
+        return buffer;
+    }
+    const noiseBuffer = createNoiseBuffer();
+
+    function playBGM(type) {
+        if(bgmNode) { bgmNode.stop(); bgmNode.disconnect(); }
+        const masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.3;
+        masterGain.connect(globalGain);
+        
+        if(type === 'timpani') {
+            masterGain.gain.value = 2.5; 
+            let oscs = [];
+            const interval = setInterval(() => {
+                if (audioCtx.state === 'suspended') return;
+                const osc = audioCtx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.5);
+                
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(2.5, audioCtx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                
+                osc.connect(gain); gain.connect(masterGain);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+                oscs.push(osc);
+                setTimeout(() => {
+                    const idx = oscs.indexOf(osc);
+                    if(idx > -1) oscs.splice(idx, 1);
+                }, 600);
+            }, 800); 
+            bgmNode = { 
+                stop: () => { 
+                    clearInterval(interval); 
+                    oscs.forEach(o => { try{ o.stop(); }catch(e){} }); 
+                }, 
+                disconnect: () => { masterGain.disconnect(); } 
+            };
+        } else if(type === 'helicopter') {
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = noiseBuffer; noise.loop = true;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass'; filter.frequency.value = 400;
+            const lfo = audioCtx.createOscillator();
+            lfo.type = 'square'; lfo.frequency.value = 8;
+            const lfoGain = audioCtx.createGain();
+            lfoGain.gain.value = 300;
+            lfo.connect(lfoGain); lfoGain.connect(filter.frequency);
+            noise.connect(filter); filter.connect(masterGain);
+            noise.start(); lfo.start();
+            bgmNode = { stop: () => { noise.stop(); lfo.stop(); }, disconnect: () => { masterGain.disconnect(); } };
+        } else if(type === 'wind') {
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = noiseBuffer; noise.loop = true;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass'; filter.frequency.value = 200;
+            const lfo = audioCtx.createOscillator();
+            lfo.type = 'sine'; lfo.frequency.value = 0.1;
+            const lfoGain = audioCtx.createGain();
+            lfoGain.gain.value = 400;
+            lfo.connect(lfoGain); lfoGain.connect(filter.frequency);
+            noise.connect(filter); filter.connect(masterGain);
+            noise.start(); lfo.start();
+            bgmNode = { stop: () => { noise.stop(); lfo.stop(); }, disconnect: () => { masterGain.disconnect(); } };
+        } else if(type === 'roar') {
+            masterGain.gain.value = 0.5;
+            const playRoar = () => {
+                if(gameState !== 'playing') return;
+                const osc = audioCtx.createOscillator(); osc.type = 'sawtooth';
+                osc.frequency.value = 50;
+                const gain = audioCtx.createGain(); gain.gain.value = 0;
+                osc.connect(gain); gain.connect(masterGain);
+                osc.start();
+                gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(1.0, audioCtx.currentTime + 0.3);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.5);
+                osc.stop(audioCtx.currentTime + 1.6);
+            };
+            playRoar();
+            const interval = setInterval(playRoar, 3000); 
+            bgmNode = { stop: () => { clearInterval(interval); }, disconnect: () => { masterGain.disconnect(); } };
+        } else if(type === 'rumble') {
+            masterGain.gain.value = 1.0; 
+            const osc = audioCtx.createOscillator(); osc.type = 'triangle';
+            osc.frequency.value = 30;
+            osc.connect(masterGain); osc.start();
+            bgmNode = { stop: () => { osc.stop(); }, disconnect: () => { masterGain.disconnect(); } };
+        } else if(type === 'hum') {
+            const osc1 = audioCtx.createOscillator(); osc1.type = 'sawtooth'; osc1.frequency.value = 65;
+            const osc2 = audioCtx.createOscillator(); osc2.type = 'square'; osc2.frequency.value = 65.5;
+            osc1.connect(masterGain); osc2.connect(masterGain);
+            osc1.start(); osc2.start();
+            bgmNode = { stop: () => { osc1.stop(); osc2.stop(); }, disconnect: () => { masterGain.disconnect(); } };
+        } else if(type === 'hover') {
+            masterGain.gain.value = 0.5;
+            const osc1 = audioCtx.createOscillator(); osc1.type = 'sine'; osc1.frequency.value = 100;
+            const osc2 = audioCtx.createOscillator(); osc2.type = 'triangle'; osc2.frequency.value = 102;
+            const lfo = audioCtx.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 1;
+            const lfoGain = audioCtx.createGain(); lfoGain.gain.value = 20;
+            lfo.connect(lfoGain); lfoGain.connect(osc1.frequency); lfoGain.connect(osc2.frequency);
+            osc1.connect(masterGain); osc2.connect(masterGain);
+            osc1.start(); osc2.start(); lfo.start();
+            bgmNode = { stop: () => { osc1.stop(); osc2.stop(); lfo.stop(); }, disconnect: () => { masterGain.disconnect(); } };
+        }
+    }
+
+    function playSFX(type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const gain = audioCtx.createGain();
+        gain.connect(globalGain);
+        if(type === 'shoot') {
+            const osc = audioCtx.createOscillator();
+            osc.type = 'square'; osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain); osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        } else if(type === 'pain') {
+            const osc = audioCtx.createOscillator();
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.connect(gain); osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        } else if(type === 'kill') {
+            const osc = audioCtx.createOscillator();
+            osc.type = 'square'; osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.7, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.connect(gain); osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+        } else if(type === 'explode') {
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = noiseBuffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass'; filter.frequency.setValueAtTime(1000, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 1.5);
+            gain.gain.setValueAtTime(1.0, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+            noise.connect(filter); filter.connect(gain);
+            noise.start(); noise.stop(audioCtx.currentTime + 1.5);
+        }
+    }
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    scene.add(camera);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer.setPixelRatio(0.25);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.insertBefore(renderer.domElement, document.getElementById('uiLayer'));
+
+    const titleScene = new THREE.Scene();
+    const titleCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    titleCamera.position.set(0, 5, 0);
+    
+    const tPlane = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshBasicMaterial({color: 0xffffff}));
+    tPlane.rotation.x = -Math.PI / 2;
+    titleScene.add(tPlane);
+    titleScene.add(new THREE.AmbientLight(0xffffff, 1.0));
+    
+    const titleHeli = new THREE.Group();
+    const heliMat = new THREE.MeshLambertMaterial({color: 0xff6600}); 
+    const windowMat = new THREE.MeshBasicMaterial({color: 0x111111});
+    const skidMat = new THREE.MeshLambertMaterial({color: 0x888888});
+    
+    const heliBody = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 6), heliMat);
+    const heliCockpit = new THREE.Mesh(new THREE.BoxGeometry(3.8, 1.5, 2), windowMat);
+    heliCockpit.position.set(0, 0.5, 2.1);
+    const sideWindow = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1, 2), windowMat);
+    sideWindow.position.set(0, 0.5, 0);
+    const heliTail = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1, 5), heliMat);
+    heliTail.position.set(0, 0, -5);
+    const tailFin = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2, 1), heliMat);
+    tailFin.position.set(0, 0.5, -7);
+    const rotorMast = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1), skidMat);
+    rotorMast.position.set(0, 1.8, 0);
+    const mainRotorGroup = new THREE.Group();
+    const heliRotor1 = new THREE.Mesh(new THREE.BoxGeometry(12, 0.1, 0.5), new THREE.MeshBasicMaterial({color: 0x333333}));
+    const heliRotor2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 12), new THREE.MeshBasicMaterial({color: 0x333333}));
+    mainRotorGroup.add(heliRotor1, heliRotor2);
+    mainRotorGroup.position.set(0, 2.3, 0);
+    mainRotorGroup.name = "rotor";
+    
+    const tailRotor = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2, 0.5), new THREE.MeshBasicMaterial({color: 0x333333}));
+    tailRotor.position.set(0.5, 0.5, -7);
+    tailRotor.name = "tailRotor";
+    
+    const skid1 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 6), skidMat);
+    skid1.rotation.x = Math.PI/2; skid1.position.set(2, -1.8, 0);
+    const skid2 = skid1.clone(); skid2.position.set(-2, -1.8, 0);
+    
+    const strut1 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.5), skidMat);
+    strut1.position.set(2, -1, 1.5); strut1.rotation.z = -Math.PI/8;
+    const strut2 = strut1.clone(); strut2.position.set(2, -1, -1.5);
+    const strut3 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.5), skidMat);
+    strut3.position.set(-2, -1, 1.5); strut3.rotation.z = Math.PI/8;
+    const strut4 = strut3.clone(); strut4.position.set(-2, -1, -1.5);
+    
+    titleHeli.add(heliBody, heliCockpit, sideWindow, heliTail, tailFin, rotorMast, mainRotorGroup, tailRotor, skid1, skid2, strut1, strut2, strut3, strut4);
+    titleHeli.position.set(6, 4, -12);
+    titleHeli.rotation.y = -Math.PI / 2.5;
+    titleScene.add(titleHeli);
+
+    const skyGroup = new THREE.Group();
+    const skyMat1 = new THREE.MeshBasicMaterial({ color: 0x3300aa, side: THREE.BackSide, transparent: true, opacity: 0.9 });
+    const sky1 = new THREE.Mesh(new THREE.SphereGeometry(400, 32, 32), skyMat1);
+    
+    const starGeo = new THREE.BufferGeometry();
+    const starMat = new THREE.PointsMaterial({color: 0xffffff, size: 2});
+    const starVerts = [];
+    for(let i=0; i<1500; i++) {
+        let x = (Math.random()-0.5)*700;
+        let y = (Math.random()-0.5)*700;
+        let z = (Math.random()-0.5)*700;
+        if(Math.sqrt(x*x+y*y+z*z) > 100) starVerts.push(x,y,z);
+    }
+    starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
+    const stars = new THREE.Points(starGeo, starMat);
+    
+    skyGroup.add(sky1, stars);
+    titleScene.add(skyGroup);
+
+    let gameState = 'preInit'; 
+    let diff = DIFFICULTIES[0];
+    let level = 1;
+    let enemies = [];
+    let projectiles = [];
+    let mines = [];
+    let obstacles = [];
+    let environmentProps = [];
+    let totalEnemiesToKill = 0;
+    let enemiesKilled = 0;
+    let lastShootTime = 0;
+    let hydras = [];
+    let hydraPullTimer = 0; 
+    let saucer = null;
+
+    let cutsceneTimer = 0;
+    let cutsceneType = '';
+    let cutsceneAlien = null;
+    let cutsceneNuke = null;
+
+    const keys = { w: false, a: false, s: false, d: false };
+    let mouseDown = false;
+
+    let loadProgress = 0;
+    let isLoaded = false;
+    const loadInterval = setInterval(() => {
+        loadProgress += 5;
+        if (loadProgress >= 100) {
+            loadProgress = 100;
+            isLoaded = true;
+            clearInterval(loadInterval);
+            document.getElementById('loadingText').innerText = "CLICK TO CONTINUE";
+        } else {
+            document.getElementById('loadingText').innerText = `LOADING... ${loadProgress}%`;
+        }
+        document.getElementById('loadingBar').style.width = `${loadProgress}%`;
+    }, 50);
+
+    function proceedToInit() {
+        if (gameState !== 'preInit' || !isLoaded) return;
+        gameState = 'init';
+        document.getElementById('preInitScreen').style.display = 'none';
+        
+        const initScreen = document.getElementById('initScreen');
+        initScreen.style.display = 'flex';
+        initScreen.style.pointerEvents = 'none';
+        
+        const initText = document.querySelector('#initScreen .init-text');
+        initText.style.visibility = 'hidden';
+
+        setTimeout(() => {
+            initText.style.visibility = 'visible';
+            initScreen.style.pointerEvents = 'auto';
+        }, 5000);
+
+        audioCtx.resume().catch(()=>{});
+        playBGM('timpani');
+    }
+
+    document.getElementById('preInitScreen').addEventListener('click', (e) => {
+        if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'label') return; 
+        proceedToInit();
+    });
+
+    document.getElementById('initScreen').addEventListener('click', function(e) {
+        audioCtx.resume().catch(()=>{});
+        this.style.display = 'none';
+        document.getElementById('titleScreen').style.display = 'flex';
+        playBGM('helicopter'); 
+        gameState = 'title';
+    });
+    
+    document.addEventListener('keydown', (e) => { 
+        if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; 
+        if(e.code === 'Space' && gameState === 'playing') detonateMines();
+    });
+    document.addEventListener('keyup', (e) => { 
+        if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false; 
+    });
+    document.addEventListener('mousedown', (e) => {
+        if(gameState === 'playing' && document.pointerLockElement) {
+            mouseDown = true;
+            if(level === 1) executeMeleeHit(); 
+            else if(level >= 4) tossMine(); 
+        } else if (gameState === 'playing') {
+            document.body.requestPointerLock();
+        }
+    });
+    document.addEventListener('mouseup', () => { mouseDown = false; });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (document.pointerLockElement === document.body && gameState === 'playing') {
+            camera.rotation.y -= e.movementX * 0.002;
+            camera.rotation.x -= e.movementY * 0.002;
+            camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+            camera.rotation.z = 0;
+            camera.rotation.order = "YXZ";
+        }
+    });
+
+    const materialCache = {
+        walrus: new THREE.MeshLambertMaterial({ color: 0x008800 }),
+        tusk: new THREE.MeshLambertMaterial({ color: 0xFFFFFF }),
+        wound: new THREE.MeshBasicMaterial({ color: 0xFF0000 }), // Deep red for permanent wounds
+        yeti: new THREE.MeshLambertMaterial({ color: 0xDDDDDD }),
+        eye: new THREE.MeshBasicMaterial({ color: 0xFF0000 }),
+        squid: new THREE.MeshLambertMaterial({ color: 0x800080 }),
+        squidEye: new THREE.MeshBasicMaterial({ color: 0xFFFF00 }),
+        hydra: new THREE.MeshLambertMaterial({ color: 0xAA0000 }),
+        harpoon: new THREE.MeshLambertMaterial({ color: 0x888888 }), // Plain Grey Harpoon Model
+        mine: new THREE.MeshLambertMaterial({ color: 0x444444 }),
+        saucer: new THREE.MeshLambertMaterial({ color: 0x88AAFF, metalness: 0.8 })
+    };
+
+    // --- Arrowhead Tip on Standard Shaft (No Flattening) Builder ---
+    function createHarpoonMesh() {
+        const group = new THREE.Group();
+        
+        // Base Grey Shaft
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 5.25, 8), materialCache.harpoon);
+        shaft.rotation.x = Math.PI / 2;
+        shaft.position.z = -2.625;
+        
+        // Arrowhead Tip using a flattened 4-segment cone
+        const tip = new THREE.Mesh(new THREE.ConeGeometry(0.35, 1.2, 4), materialCache.harpoon);
+        tip.scale.set(1, 1, 0.25); // Flattens it completely into an arrowhead broadhead
+        tip.rotation.x = -Math.PI / 2;
+        // Position it so its flat base connects seamlessly with the end of the shaft
+        tip.position.z = -5.85; 
+        
+        group.add(shaft, tip);
+        return group;
+    }
+
+    const harpoonTemplate = createHarpoonMesh();
+    
+    const meleeHarpoon = harpoonTemplate.clone();
+    meleeHarpoon.position.set(0.5, -0.5, 1.0); 
+    camera.add(meleeHarpoon);
+
+    // --- Dynamic Persistent Wound Marker Function (Proper Extrusion) ---
+    function addWoundMarker(mesh, type) {
+        if (type !== 'walrus' && type !== 'yeti') return;
+
+        const wound = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), materialCache.wound);
+        
+        // Determine core radius & height offset of target body geometry
+        let yOffset = 2; // Walrus
+        let radius = 1.6;
+        if (type === 'yeti') { yOffset = 4.5; radius = 1.8; }
+        
+        // Angle to spawn the wound block safely OUTSIDE the radius of the cylinder/box body
+        let angle = Math.random() * Math.PI * 2;
+        
+        wound.position.set(
+            Math.cos(angle) * radius,
+            yOffset + (Math.random() - 0.5) * 3.0, 
+            Math.sin(angle) * radius
+        );
+        
+        wound.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+        mesh.add(wound);
+    }
+
+    function createWalrus() {
+        const group = new THREE.Group();
+        const bodyGeo = new THREE.CylinderGeometry(1.5, 2, 4, 8);
+        bodyGeo.rotateX(Math.PI/2);
+        const body = new THREE.Mesh(bodyGeo, materialCache.walrus);
+        body.position.y = 2;
+        
+        const tuskGeo = new THREE.ConeGeometry(0.3, 3, 8);
+        tuskGeo.rotateX(Math.PI); 
+        const t1 = new THREE.Mesh(tuskGeo, materialCache.tusk); t1.position.set(0.8, 1.5, 2.2);
+        const t2 = new THREE.Mesh(tuskGeo, materialCache.tusk); t2.position.set(-0.8, 1.5, 2.2);
+        
+        const eyeGeo = new THREE.SphereGeometry(0.2, 4, 4);
+        const eyeMat = new THREE.MeshBasicMaterial({color: 0x000000});
+        const e1 = new THREE.Mesh(eyeGeo, eyeMat); e1.position.set(0.6, 2.8, 1.8);
+        const e2 = new THREE.Mesh(eyeGeo, eyeMat); e2.position.set(-0.6, 2.8, 1.8);
+
+        const flipGeo = new THREE.BoxGeometry(2, 0.5, 1.5);
+        const f1 = new THREE.Mesh(flipGeo, materialCache.walrus); 
+        f1.position.set(1.5, 1, 0); f1.rotation.z = Math.PI/8; f1.name = 'flipperL';
+        const f2 = new THREE.Mesh(flipGeo, materialCache.walrus); 
+        f2.position.set(-1.5, 1, 0); f2.rotation.z = -Math.PI/8; f2.name = 'flipperR';
+
+        group.add(body, t1, t2, e1, e2, f1, f2);
+        return group;
+    }
+
+    function createYeti() {
+        const group = new THREE.Group();
+        const bodyGeo = new THREE.BoxGeometry(3, 5, 2);
+        const body = new THREE.Mesh(bodyGeo, materialCache.yeti);
+        body.position.y = 4.5;
+        
+        const eyeGeo = new THREE.SphereGeometry(0.2, 4, 4);
+        const e1 = new THREE.Mesh(eyeGeo, materialCache.eye); e1.position.set(0.5, 6, 1.1);
+        const e2 = new THREE.Mesh(eyeGeo, materialCache.eye); e2.position.set(-0.5, 6, 1.1);
+        
+        const armGeo = new THREE.BoxGeometry(1, 4, 1);
+        armGeo.translate(0, -1.5, 0); 
+        const a1 = new THREE.Mesh(armGeo, materialCache.yeti); a1.position.set(2, 6, 0); a1.name = "armL";
+        const a2 = new THREE.Mesh(armGeo, materialCache.yeti); a2.position.set(-2, 6, 0); a2.name = "armR";
+        
+        const legGeo = new THREE.BoxGeometry(1.2, 3, 1.2);
+        legGeo.translate(0, -1.5, 0);
+        const l1 = new THREE.Mesh(legGeo, materialCache.yeti); l1.position.set(0.8, 3, 0); l1.name = "legL";
+        const l2 = new THREE.Mesh(legGeo, materialCache.yeti); l2.position.set(-0.8, 3, 0); l2.name = "legR";
+
+        const mouth = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 0.5), new THREE.MeshBasicMaterial({color: 0x000000}));
+        mouth.position.set(0, 5.3, 1.01);
+        
+        const toothGeo = new THREE.ConeGeometry(0.1, 0.3, 4);
+        const toothMat = new THREE.MeshBasicMaterial({color: 0xffffff});
+        const t1 = new THREE.Mesh(toothGeo, toothMat); t1.position.set(0.4, -0.1, 0.2); t1.rotation.x = Math.PI;
+        const t2 = new THREE.Mesh(toothGeo, toothMat); t2.position.set(-0.4, -0.1, 0.2); t2.rotation.x = Math.PI;
+        const t3 = new THREE.Mesh(toothGeo, toothMat); t3.position.set(0, 0.1, 0.2);
+        mouth.add(t1, t2, t3);
+
+        group.add(body, e1, e2, a1, a2, l1, l2, mouth);
+        return group;
+    }
+
+    function createSquid() {
+        const group = new THREE.Group();
+        const bodyGeo = new THREE.SphereGeometry(2, 8, 8);
+        const body = new THREE.Mesh(bodyGeo, materialCache.squid);
+        body.scale.set(1, 1.5, 1); 
+        body.position.y = 5.5; 
+        
+        const eyeGeo = new THREE.SphereGeometry(0.5, 8, 8);
+        const e1 = new THREE.Mesh(eyeGeo, materialCache.squidEye); e1.position.set(1, 5, 1.5);
+        const e2 = new THREE.Mesh(eyeGeo, materialCache.squidEye); e2.position.set(-1, 5, 1.5);
+        
+        const pupilGeo = new THREE.SphereGeometry(0.2, 8, 8);
+        const pupilMat = new THREE.MeshBasicMaterial({color: 0x000000});
+        const p1 = new THREE.Mesh(pupilGeo, pupilMat); p1.position.set(1.1, 5, 1.9);
+        const p2 = new THREE.Mesh(pupilGeo, pupilMat); p2.position.set(-1.1, 5, 1.9);
+
+        group.add(body, e1, e2, p1, p2);
+        
+        for(let i=0; i<8; i++){
+            const tentacleBase = new THREE.Group();
+            let ang = (i / 8) * Math.PI * 2;
+            tentacleBase.position.set(Math.cos(ang)*1.2, 2.5, Math.sin(ang)*1.2);
+            
+            let currentParent = tentacleBase;
+            for(let j=0; j<5; j++) {
+                const tGeo = new THREE.CylinderGeometry(0.2 - (j*0.03), 0.2 - ((j+1)*0.03), 1.25, 4);
+                tGeo.translate(0, -0.625, 0); 
+                const seg = new THREE.Mesh(tGeo, materialCache.squid);
+                seg.name = "tentacleSegment";
+                seg.userData = { 
+                    baseRotX: Math.sin(ang) * 0.1, 
+                    baseRotZ: -Math.cos(ang) * 0.1,
+                    offset: i + (j * 0.5) 
+                };
+                if (j > 0) seg.position.y = -1.25; 
+                currentParent.add(seg);
+                currentParent = seg;
+            }
+            
+            group.add(tentacleBase);
+        }
+        return group;
+    }
+
+    function createHydra() {
+        const group = new THREE.Group();
+        
+        const collider = new THREE.Mesh(new THREE.BoxGeometry(10, 12, 10));
+        collider.visible = false;
+        collider.name = 'collider';
+        collider.position.y = 6;
+        group.add(collider);
+
+        const baseGeo = new THREE.CylinderGeometry(5, 6, 4, 12);
+        const base = new THREE.Mesh(baseGeo, materialCache.hydra);
+        base.position.y = 2;
+        group.add(base);
+        
+        const vortexGeo = new THREE.TorusGeometry(12, 1.5, 16, 50);
+        const vortexMat = new THREE.MeshBasicMaterial({color: 0x00ffff, wireframe: true, transparent: true, opacity: 0.8});
+        const vortex = new THREE.Mesh(vortexGeo, vortexMat);
+        vortex.rotation.x = Math.PI / 2;
+        vortex.position.y = 1;
+        vortex.name = 'vortex';
+        vortex.visible = false;
+        group.add(vortex);
+
+        const eyeGeo = new THREE.SphereGeometry(0.25, 8, 8);
+        const eyeMat = new THREE.MeshBasicMaterial({color: 0xffff00});
+        const pupilGeo = new THREE.BoxGeometry(0.05, 0.3, 0.1); 
+        const pupilMat = new THREE.MeshBasicMaterial({color: 0x000000});
+        const fangGeo = new THREE.ConeGeometry(0.1, 0.6, 4);
+        const fangMat = new THREE.MeshLambertMaterial({color: 0xffffff});
+
+        for(let i=0; i<6; i++) {
+            const neckGroup = new THREE.Group();
+            const neckGeo = new THREE.CylinderGeometry(0.5, 0.8, 8, 6);
+            const neck = new THREE.Mesh(neckGeo, materialCache.hydra);
+            neck.position.y = 4;
+            
+            const headGroup = new THREE.Group();
+            headGroup.position.set(0, 8, 1);
+            
+            const headMesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 2), materialCache.hydra);
+            headGroup.add(headMesh);
+
+            const e1 = new THREE.Mesh(eyeGeo, eyeMat); e1.position.set(0.7, 0.2, 0.6);
+            const e2 = new THREE.Mesh(eyeGeo, eyeMat); e2.position.set(-0.7, 0.2, 0.6);
+            const p1 = new THREE.Mesh(pupilGeo, pupilMat); p1.position.set(0.85, 0.2, 0.6);
+            const p2 = new THREE.Mesh(pupilGeo, pupilMat); p2.position.set(-0.85, 0.2, 0.6);
+            
+            const f1 = new THREE.Mesh(fangGeo, fangMat); f1.position.set(0.4, -0.9, 0.8); f1.rotation.x = Math.PI;
+            const f2 = new THREE.Mesh(fangGeo, fangMat); f2.position.set(-0.4, -0.9, 0.8); f2.rotation.x = Math.PI;
+
+            headGroup.add(e1, e2, p1, p2, f1, f2);
+
+            neckGroup.add(neck, headGroup);
+            neckGroup.position.set(Math.cos(i*Math.PI/3)*3, 4, Math.sin(i*Math.PI/3)*3);
+            neckGroup.userData = { offset: i };
+            group.add(neckGroup);
+        }
+        return group;
+    }
+
+    function spawnEnemy(type, x, z) {
+        let mesh, hp;
+        if(type === 'walrus') { mesh = createWalrus(); hp = 4; }
+        else if(type === 'yeti') { mesh = createYeti(); hp = 8; }
+        else if(type === 'squid') { 
+            mesh = createSquid(); 
+            hp = 24; 
+        }
+        else if(type === 'hydra') { mesh = createHydra(); hp = 100; }
+        
+        mesh.position.set(x, 0, z);
+        scene.add(mesh);
+        
+        let bb = new THREE.Box3().setFromObject(mesh);
+        let enemy = { type, mesh, hp, maxHp: hp, bb };
+        
+        if(type === 'hydra') {
+            hydras.push(enemy);
+        } else {
+            enemies.push(enemy);
+        }
+    }
+
+    function spawnSaucer() {
+        saucer = new THREE.Group();
+        const baseGeo = new THREE.CylinderGeometry(20, 20, 4, 16);
+        const base = new THREE.Mesh(baseGeo, materialCache.saucer);
+        base.position.y = 4; 
+        
+        const domeGeo = new THREE.SphereGeometry(8, 16, 8, 0, Math.PI*2, 0, Math.PI/2);
+        const dome = new THREE.Mesh(domeGeo, new THREE.MeshLambertMaterial({color: 0xAAFFDD}));
+        dome.position.y = 6;
+        
+        const legGeo = new THREE.CylinderGeometry(0.5, 0.5, 4, 8);
+        for(let i=0; i<4; i++){
+            const leg = new THREE.Mesh(legGeo, materialCache.saucer);
+            leg.position.set(Math.cos(i*Math.PI/2)*12, 2, Math.sin(i*Math.PI/2)*12);
+            saucer.add(leg);
+        }
+        
+        const rampGroup = new THREE.Group();
+        rampGroup.position.set(0, 2, 19);
+        const rampGeo = new THREE.BoxGeometry(6, 0.5, 15);
+        const ramp = new THREE.Mesh(rampGeo, materialCache.saucer);
+        ramp.position.set(0, 0, 7.5); 
+        rampGroup.add(ramp);
+        rampGroup.rotation.x = -Math.PI / 2.2; 
+        
+        saucer.add(base, dome, rampGroup);
+        saucer.userData.ramp = rampGroup;
+        saucer.position.set(0, 50, -80); 
+        scene.add(saucer);
+    }
+
+    function shoot() {
+        const now = performance.now();
+        if (level === 2 && now - lastShootTime < 125) return;
+        if (level === 3 && now - lastShootTime < 125) return;
+        if (level >= 4) { tossMine(); return; } 
+        
+        lastShootTime = now;
+        playSFX('shoot');
+        
+        let count = (level === 3) ? 3 : 1;
+        for(let i=0; i<count; i++) {
+            const pGroup = harpoonTemplate.clone();
+            pGroup.position.copy(camera.position);
+            pGroup.quaternion.copy(camera.quaternion);
+            
+            if (count > 1) {
+                let angle = (i - 1) * (10 * Math.PI / 180);
+                pGroup.rotateY(angle);
+            }
+            
+            scene.add(pGroup);
+            let dir = new THREE.Vector3(0,0,-1).applyQuaternion(pGroup.quaternion);
+            
+            // Increased by 50% setting base magnitude to 75
+            let vel = dir.multiplyScalar(125); 
+            projectiles.push({ mesh: pGroup, vel: vel });
+        }
+    }
+
+    function executeMeleeHit() {
+        playSFX('shoot');
+        
+        meleeHarpoon.position.z = -3.0; 
+
+        let reachBox = new THREE.Box3(camera.position.clone().subScalar(7.875), camera.position.clone().addScalar(7.875));
+
+        for (let j = enemies.length - 1; j >= 0; j--) {
+            let e = enemies[j];
+            e.bb.setFromObject(e.mesh);
+            
+            if (reachBox.intersectsBox(e.bb)) {
+                let toEnemy = e.mesh.position.clone().sub(camera.position).normalize();
+                let forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+                
+                if (toEnemy.dot(forward) > 0.4) {
+                    e.hp -= 1; 
+                    playSFX('pain');
+                    markWound(e.mesh);
+                    addWoundMarker(e.mesh, e.type);
+                    if (e.hp <= 0) {
+                        playSFX('kill');
+                        scene.remove(e.mesh);
+                        enemies.splice(j, 1);
+                        enemiesKilled++;
+                        updateHUD();
+                        checkLevelProgress();
+                    }
+                }
+            }
+        }
+    }
+
+    function tossMine() {
+        const now = performance.now();
+        if(now - lastShootTime < 500) return;
+        lastShootTime = now;
+        
+        const mineGeo = new THREE.SphereGeometry(0.5, 8, 8);
+        const mine = new THREE.Mesh(mineGeo, materialCache.harpoon); 
+        
+        for(let i=0; i<8; i++){
+            const spike = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.5, 4), materialCache.harpoon);
+            let spikeDir = new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, Math.random()-0.5).normalize();
+            spike.position.copy(spikeDir.clone().multiplyScalar(0.5));
+            spike.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), spikeDir);
+            mine.add(spike);
+        }
+        
+        mine.position.copy(camera.position);
+        scene.add(mine);
+        
+        let dir = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
+        let vel = dir.multiplyScalar(20).add(new THREE.Vector3(0, 5, 0)); 
+        mines.push({ mesh: mine, vel: vel });
+    }
+
+    function detonateMines() {
+        if(mines.length === 0) return;
+        playSFX('explode');
+        mines.forEach(m => {
+            const expl = new THREE.Mesh(new THREE.SphereGeometry(5, 16, 16), new THREE.MeshBasicMaterial({color: 0xFF8800, transparent: true, opacity: 0.8}));
+            expl.position.copy(m.mesh.position);
+            scene.add(expl);
+            setTimeout(() => scene.remove(expl), 300);
+            scene.remove(m.mesh);
+
+            if (m.mesh.position.distanceTo(camera.position) < 8) {
+                triggerDeath('deathMine');
+            }
+
+            hydras.forEach((h) => {
+                let dist = m.mesh.position.distanceTo(h.mesh.position);
+                if (dist < 15) {
+                    h.hp -= 10;
+                    playSFX('pain');
+                    markWound(h.mesh);
+                }
+            });
+
+            if (level === 5 && saucer && m.mesh.position.distanceTo(saucer.position) < 25) {
+                triggerCutscene('Option 2');
+            }
+        });
+        mines = [];
+    }
+
+    function markWound(mesh) {
+        mesh.traverse((child) => {
+            if (child.isMesh && child.material !== materialCache.wound && child.name !== 'vortex') {
+                if (!child.userData.origMat) child.userData.origMat = child.material;
+                child.material = materialCache.wound;
+                setTimeout(() => {
+                    if (child.userData.origMat) child.material = child.userData.origMat;
+                }, 100);
+            }
+        });
+    }
+
+    function triggerCutscene(type) {
+        gameState = 'cutscene';
+        cutsceneType = type;
+        cutsceneTimer = 0;
+        
+        document.exitPointerLock();
+        document.getElementById('hud').style.display = 'none';
+
+        if (type === 'Option 1') {
+            scene.clear();
+            scene.background = new THREE.Color(0xffffff);
+            scene.fog = new THREE.Fog(0xffffff, 10, 50);
+            scene.add(camera);
+            
+            const ambLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(0, 10, 5);
+            scene.add(dirLight);
+
+            camera.position.set(0, 5, 0);
+            camera.rotation.set(0, 0, 0);
+            
+            const alienGeo = new THREE.CylinderGeometry(1, 1, 6, 8);
+            const alienMat = new THREE.MeshLambertMaterial({color: 0x00aa00});
+            cutsceneAlien = new THREE.Mesh(alienGeo, alienMat);
+            
+            const alienHead = new THREE.Mesh(new THREE.SphereGeometry(1.5, 8, 8), alienMat);
+            alienHead.position.y = 4;
+            
+            const alienArm1 = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 3), alienMat);
+            alienArm1.rotation.x = Math.PI / 2;
+            alienArm1.position.set(1.2, 2, 1.5);
+            
+            const alienArm2 = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 3), alienMat);
+            alienArm2.rotation.x = Math.PI / 2;
+            alienArm2.position.set(-1.2, 2, 1.5);
+
+            const eyeMat = new THREE.MeshBasicMaterial({color: 0x000000});
+            const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), eyeMat);
+            eye1.position.set(0.6, 4.3, 1.25);
+            const eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), eyeMat);
+            eye2.position.set(-0.6, 4.3, 1.25);
+            
+            cutsceneAlien.add(alienHead, alienArm1, alienArm2, eye1, eye2);
+            cutsceneAlien.position.set(0, 3, -15);
+            scene.add(cutsceneAlien);
+
+        } else if (type === 'Option 2') {
+            camera.position.set(0, 15, 30); 
+            camera.lookAt(0, 20, -50);
+            
+            const nukeMat = new THREE.MeshBasicMaterial({color: 0xff4400, transparent: true, opacity: 0.9});
+            cutsceneNuke = new THREE.Group();
+            
+            const stem = new THREE.Mesh(new THREE.CylinderGeometry(8, 8, 40, 16), nukeMat);
+            stem.position.y = 20;
+            const cap = new THREE.Mesh(new THREE.SphereGeometry(25, 16, 16), nukeMat);
+            cap.position.y = 40;
+            
+            cutsceneNuke.add(stem, cap);
+            cutsceneNuke.position.set(0, -10, -50);
+            scene.add(cutsceneNuke);
+            playSFX('explode');
+        }
+    }
+
+    const clock = new THREE.Clock();
+
+    function updateGame() {
+        requestAnimationFrame(updateGame);
+        let dt = clock.getDelta();
+        if(dt > 0.1) dt = 0.1;
+
+        if (gameState === 'preInit' || gameState === 'init') {
+            return; 
+        }
+
+        if (gameState === 'title') {
+            skyGroup.rotation.y += 0.1 * dt;
+            skyGroup.rotation.x += 0.05 * dt;
+            
+            const rotor = titleHeli.getObjectByName("rotor");
+            if (rotor) rotor.rotation.y += 20 * dt;
+            const tailRotor = titleHeli.getObjectByName("tailRotor");
+            if (tailRotor) tailRotor.rotation.x += 20 * dt;
+            
+            renderer.render(titleScene, titleCamera);
+            return;
+        }
+
+        if (gameState === 'cutscene') {
+            cutsceneTimer += dt;
+            if (cutsceneType === 'Option 1') {
+                if (cutsceneAlien && cutsceneAlien.position.z < -3) {
+                    cutsceneAlien.position.z += 2.5 * dt;
+                } else {
+                    camera.position.y = 5 + Math.sin(cutsceneTimer * 8) * 0.2; 
+                }
+            } else if (cutsceneType === 'Option 2') {
+                if (cutsceneNuke) {
+                    cutsceneNuke.scale.addScalar(dt * 1.5);
+                    scene.background = new THREE.Color().setHSL(0, 1, Math.min(1, cutsceneTimer / 2));
+                }
+            }
+            if (cutsceneTimer >= 5) endGame(cutsceneType);
+            renderer.render(scene, camera);
+            return;
+        }
+
+        if (gameState !== 'playing') return;
+
+        const speed = 15;
+        let dir = new THREE.Vector3();
+        if(keys.w) dir.z -= 1;
+        if(keys.s) dir.z += 1;
+        if(keys.a) dir.x -= 1;
+        if(keys.d) dir.x += 1;
+        dir.normalize();
+        
+        let moveVec = new THREE.Vector3();
+        moveVec.copy(dir).applyQuaternion(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), camera.rotation.y));
+        
+        let newPos = camera.position.clone().add(moveVec.multiplyScalar(speed * dt));
+        newPos.y = 2;
+        
+        let hitObj = false;
+        let pBox = new THREE.Box3(newPos.clone().subScalar(1), newPos.clone().addScalar(1));
+        obstacles.forEach(obs => {
+            if(pBox.intersectsBox(obs)) hitObj = true;
+        });
+        if(!hitObj) camera.position.copy(newPos);
+
+        if (level === 1 && meleeHarpoon.position.z < 1.0) {
+            meleeHarpoon.position.z += 15 * dt; 
+            if (meleeHarpoon.position.z > 1.0) meleeHarpoon.position.z = 1.0;
+        }
+
+        if(mouseDown && (level === 2 || level === 3)) shoot();
+
+        for(let i=projectiles.length-1; i>=0; i--) {
+            let p = projectiles[i];
+            
+            p.vel.y -= 30 * dt; 
+            p.mesh.position.add(p.vel.clone().multiplyScalar(dt));
+            
+            // Adjust visual pitch dynamically to match the arc trajectory
+            p.mesh.lookAt(p.mesh.position.clone().add(p.vel));
+            
+            if (p.mesh.position.y < 0 || p.mesh.position.length() > 500) {
+                scene.remove(p.mesh);
+                projectiles.splice(i, 1);
+                continue;
+            }
+
+            let pBox = new THREE.Box3().setFromObject(p.mesh);
+            let hit = false;
+            for(let j=enemies.length-1; j>=0; j--) {
+                let e = enemies[j];
+                e.bb.setFromObject(e.mesh);
+                if (pBox.intersectsBox(e.bb)) {
+                    hit = true;
+                    e.hp--;
+                    playSFX('pain');
+                    markWound(e.mesh);
+                    addWoundMarker(e.mesh, e.type);
+                    if(e.hp <= 0) {
+                        playSFX('kill');
+                        scene.remove(e.mesh);
+                        enemies.splice(j, 1);
+                        enemiesKilled++;
+                        updateHUD();
+                        checkLevelProgress();
+                    }
+                    break;
+                }
+            }
+            if(hit) {
+                scene.remove(p.mesh);
+                projectiles.splice(i, 1);
+            }
+        }
+
+        mines.forEach(m => {
+            m.mesh.position.add(m.vel.clone().multiplyScalar(dt));
+            m.vel.y -= 30 * dt; 
+            if(m.mesh.position.y <= 0.5) {
+                m.mesh.position.y = 0.5;
+                m.vel.set(0,0,0);
+            }
+        });
+
+        enemies.forEach(e => {
+            let toPlayer = camera.position.clone().sub(e.mesh.position);
+            toPlayer.y = 0;
+            let dist = toPlayer.length();
+            if (dist > 0) {
+                toPlayer.normalize();
+                e.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+                let moveSpeed = (level === 2 ? 8 : (level === 3 ? 9 : 4)) * diff.speed;
+                
+                let moveDir = toPlayer.clone();
+                if (e.type === 'squid') {
+                    moveDir.applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.6);
+                }
+
+                e.mesh.position.add(moveDir.multiplyScalar(moveSpeed * dt));
+                e.bb.setFromObject(e.mesh);
+                
+                let pBox = new THREE.Box3(camera.position.clone().subScalar(1.5), camera.position.clone().addScalar(1.5));
+                if (pBox.intersectsBox(e.bb)) {
+                    if(level===1) triggerDeath('deathWalrus');
+                    else if(level===2) triggerDeath('deathYeti');
+                    else if(level===3) triggerDeath('deathSquid');
+                }
+
+                if(e.type === 'walrus') {
+                    let fL = e.mesh.getObjectByName('flipperL');
+                    let fR = e.mesh.getObjectByName('flipperR');
+                    let flap = Math.sin(performance.now() * 0.015) * 0.5;
+                    if(fL) fL.rotation.z = Math.PI/8 + flap;
+                    if(fR) fR.rotation.z = -Math.PI/8 - flap;
+                }
+
+                if(e.type === 'yeti') {
+                    let armL = e.mesh.getObjectByName('armL');
+                    let armR = e.mesh.getObjectByName('armR');
+                    let legL = e.mesh.getObjectByName('legL');
+                    let legR = e.mesh.getObjectByName('legR');
+                    let swing = Math.sin(performance.now() * 0.01) * 0.6;
+                    if(armL) armL.rotation.x = swing;
+                    if(armR) armR.rotation.x = -swing;
+                    if(legL) legL.rotation.x = -swing;
+                    if(legR) legR.rotation.x = swing;
+                }
+
+                if(e.type === 'squid') {
+                    let waveTime = performance.now() * 0.005;
+                    e.mesh.traverse(c => {
+                        if(c.name === 'tentacleSegment') {
+                            let waveX = Math.sin(waveTime + c.userData.offset) * 0.2;
+                            let waveZ = Math.cos(waveTime + c.userData.offset) * 0.2;
+                            c.rotation.x = c.userData.baseRotX + waveX;
+                            c.rotation.z = c.userData.baseRotZ + waveZ;
+                        }
+                    });
+                }
+            }
+        });
+
+        if (level < 4 && enemies.length < diff.activeReq) {
+            let angle = Math.random() * Math.PI * 2;
+            let dist = 100 + Math.random() * 50;
+            let ex = Math.cos(angle) * dist;
+            let ez = Math.sin(angle) * dist;
+            let type = level===1 ? 'walrus' : (level===2 ? 'yeti' : 'squid');
+            spawnEnemy(type, ex, ez);
+        }
+
+        if (level >= 4) {
+            hydraPullTimer += dt;
+            let cycleTime = hydraPullTimer % 30;
+            let isPulling = cycleTime >= 10 && cycleTime < 20;
+            
+            hydras.forEach(h => {
+                h.hp = Math.min(h.maxHp, h.hp + 5 * dt);
+                
+                let vortex = h.mesh.getObjectByName('vortex');
+                if (vortex) {
+                    vortex.visible = isPulling;
+                    if (isPulling) {
+                        vortex.rotation.z -= 5 * dt;
+                        let s = 1 + Math.sin(performance.now() * 0.01) * 0.2;
+                        vortex.scale.set(s, s, 1);
+                        vortex.material.color.setHSL((performance.now() % 1000) / 1000, 1, 0.5);
+                    }
+                }
+
+                h.mesh.children.forEach(c => {
+                    if(c.userData.offset !== undefined) {
+                        c.rotation.z = Math.sin(performance.now() * 0.002 + c.userData.offset) * 0.2;
+                    }
+                });
+                
+                let toPlayer = camera.position.clone().sub(h.mesh.position);
+                toPlayer.y = 0;
+                h.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+
+                if (isPulling) {
+                    let dist = toPlayer.length();
+                    if(dist > 5) {
+                        camera.position.sub(toPlayer.normalize().multiplyScalar(20 * dt));
+                    }
+                }
+
+                let collider = h.mesh.getObjectByName('collider');
+                if(collider) {
+                    h.bb.setFromObject(collider);
+                } else {
+                    h.bb.setFromObject(h.mesh);
+                }
+
+                let pBox = new THREE.Box3(camera.position.clone().subScalar(1.5), camera.position.clone().addScalar(1.5));
+                if (pBox.intersectsBox(h.bb)) {
+                    triggerDeath('deathHydra');
+                }
+            });
+
+            if(hydras.length > 0) {
+                document.getElementById('hydraHealthContainer').style.display = 'flex';
+                document.getElementById('hydraHealthBar').style.width = (hydras[0].hp / hydras[0].maxHp * 100) + "%";
+                if(hydras.length > 1) {
+                    document.getElementById('hydraHealthBar2').style.display = 'block';
+                    document.getElementById('hydraHealthBar2').style.width = (hydras[1].hp / hydras[1].maxHp * 100) + "%";
+                } else {
+                    document.getElementById('hydraHealthBar2').style.display = 'none';
+                }
+                
+                for(let i=hydras.length-1; i>=0; i--) {
+                    if(hydras[i].hp <= 0) {
+                        playSFX('kill');
+                        scene.remove(hydras[i].mesh);
+                        hydras.splice(i, 1);
+                        enemiesKilled++;
+                    }
+                }
+                if(hydras.length === 0) {
+                    document.getElementById('hydraHealthContainer').style.display = 'none';
+                    checkLevelProgress();
+                }
+            }
+        }
+
+        if (level === 5 && saucer) {
+            if(saucer.position.y > 0) {
+                saucer.position.y -= 5 * dt;
+            } else {
+                saucer.position.y = 0;
+                let ramp = saucer.userData.ramp;
+                if(ramp.rotation.x < 0.20) { 
+                    ramp.rotation.x += 1.0 * dt; 
+                } else {
+                    let dx = camera.position.x - saucer.position.x;
+                    let dz = camera.position.z - saucer.position.z;
+                    if (Math.abs(dx) < 10 && dz < 35 && dz > 10) {
+                        triggerCutscene('Option 1');
+                    }
+                }
+            }
+        }
+
+        updateRadar();
+        renderer.render(scene, camera);
+    }
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+        let selRadio = document.querySelector('input[name="difficulty"]:checked');
+        if (!selRadio || selRadio.disabled) return;
+        let sel = selRadio.value;
+        diff = DIFFICULTIES[sel];
+        document.getElementById('titleScreen').style.display = 'none';
+        startLevel(1);
+    });
+
+    document.getElementById('continueBtn').addEventListener('click', () => {
+        document.getElementById('pauseScreen').style.display = 'none';
+        gameState = 'playing';
+        document.body.requestPointerLock();
+        document.getElementById('hud').style.display = 'block';
+    });
+
+    function returnToTitle() {
+        document.getElementById('deathScreen').style.display = 'none';
+        document.getElementById('endScreen').style.display = 'none';
+        
+        document.getElementById('endScreen').style.background = "rgba(0,0,0,0.6)";
+        document.getElementById('endTitle').style.color = "white";
+        
+        initDifficultyLocks();
+        
+        document.getElementById('titleScreen').style.display = 'flex';
+        playBGM('helicopter');
+        gameState = 'title';
+    }
+
+    document.getElementById('restartBtn').addEventListener('click', returnToTitle);
+    document.getElementById('endBtn').addEventListener('click', returnToTitle);
+
+    function showSkroll(id, text, buttonDelay=5000) {
+        document.getElementById(id).innerText = text;
+        const el = document.getElementById(id);
+        el.style.animation = 'none';
+        el.offsetHeight; 
+        el.style.animation = null;
+        
+        const continueBtn = document.getElementById('continueBtn');
+        if (id === 'levelSkroll') {
+            continueBtn.style.display = 'none';
+            setTimeout(() => {
+                if(gameState === 'paused') continueBtn.style.display = 'block';
+            }, buttonDelay);
+        }
+    }
+
+    function startLevel(n) {
+        level = n;
+        gameState = 'paused';
+        document.getElementById('hud').style.display = 'none';
+        document.getElementById('pauseScreen').style.display = 'flex';
+        document.getElementById('hydraHealthContainer').style.display = 'none';
+        document.getElementById('hydraHealthBar2').style.display = 'none';
+        
+        showSkroll('levelSkroll', SKROLLS['level'+n]);
+
+        scene.clear();
+        scene.add(camera); 
+        
+        meleeHarpoon.visible = (level === 1);
+        
+        enemies = []; projectiles = []; mines = []; hydras = []; obstacles = []; environmentProps = [];
+        hydraPullTimer = 0;
+        camera.position.set(0, 5, 0);
+        camera.rotation.set(0,0,0);
+        document.exitPointerLock();
+
+        scene.add(new THREE.AmbientLight(0x404040));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLight.position.set(0, 10, 0);
+        scene.add(dirLight);
+
+        if (level === 1) {
+            scene.background = new THREE.Color(0xDDDD88); 
+            scene.fog = new THREE.Fog(0xDDDD88, 10, 200);
+            playBGM('wind');
+            totalEnemiesToKill = diff.killReq;
+            enemiesKilled = 0;
+            createGround(0xFFFFFF); 
+            createMountains();
+        } else if (level === 2) {
+            scene.background = new THREE.Color(0x050505);
+            scene.fog = new THREE.Fog(0x050505, 5, 100);
+            playBGM('roar');
+            totalEnemiesToKill = diff.killReq;
+            enemiesKilled = 0;
+            createGround(0x334455);
+            createCeiling(0x334455);
+            createStalags();
+        } else if (level === 3) {
+            scene.background = new THREE.Color(0x000022);
+            scene.fog = new THREE.Fog(0x000022, 5, 80);
+            playBGM('rumble');
+            totalEnemiesToKill = diff.killReq;
+            enemiesKilled = 0;
+            createGround(0x221133);
+            createCorals();
+            createBubbles();
+        } else if (level === 4) {
+            scene.background = new THREE.Color(0x330000);
+            scene.fog = new THREE.Fog(0x330000, 10, 150);
+            playBGM('hum'); 
+            totalEnemiesToKill = diff.hydras;
+            enemiesKilled = 0;
+            createGround(0x110000);
+            createCeiling(0x111111);
+            createJaggedRocks();
+            
+            for(let i=0; i<diff.hydras; i++) {
+                spawnEnemy('hydra', (i===0?-20:20), -50);
+            }
+        } else if (level === 5) {
+            scene.background = new THREE.Color(0xDDDD88);
+            scene.fog = new THREE.Fog(0xDDDD88, 10, 200);
+            playBGM('hover');
+            createGround(0xFFFFFF);
+            createMountains(); 
+            spawnSaucer();
+            totalEnemiesToKill = 0;
+            enemiesKilled = 0;
+        }
+
+        updateHUD();
+    }
+
+    function createGround(color) {
+        const p = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshLambertMaterial({color}));
+        p.rotation.x = -Math.PI/2;
+        scene.add(p);
+    }
+    
+    function createCeiling(color) {
+        const p = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshLambertMaterial({color}));
+        p.rotation.x = Math.PI/2;
+        p.position.y = 30;
+        scene.add(p);
+    }
+
+    function createMountains() {
+        for(let i=0; i<50; i++) {
+            let x = (Math.random()-0.5)*500;
+            let z = (Math.random()-0.5)*500;
+            
+            if(Math.abs(x) < 50 && Math.abs(z) < 50) continue; 
+            if(Math.abs(x) < 80 && Math.abs(z + 80) < 80) continue;
+            if(Math.abs(x) < 50 && Math.abs(z - 30) < 50) continue;
+
+            const m = new THREE.Mesh(new THREE.ConeGeometry(20+Math.random()*20, 50+Math.random()*50, 4), new THREE.MeshLambertMaterial({color:0xAAAAAA}));
+            m.position.set(x, 25, z);
+            scene.add(m);
+            let bb = new THREE.Box3().setFromObject(m);
+            obstacles.push(bb);
+        }
+    }
+    
+    function createStalags() {
+        for(let i=0; i<100; i++) {
+            const isTop = Math.random() > 0.5;
+            const h = 10 + Math.random()*10;
+            const m = new THREE.Mesh(new THREE.ConeGeometry(2, h, 6), new THREE.MeshLambertMaterial({color:0x445566}));
+            let x = (Math.random()-0.5)*200;
+            let z = (Math.random()-0.5)*200;
+            if(Math.abs(x) < 20 && Math.abs(z) < 20) continue;
+            
+            if(isTop) {
+                m.position.set(x, 30 - h/2, z);
+                m.rotation.x = Math.PI;
+            } else {
+                m.position.set(x, h/2, z);
+                let bb = new THREE.Box3().setFromObject(m);
+                obstacles.push(bb);
+            }
+            scene.add(m);
+        }
+    }
+
+    function createCorals() {
+        for(let i=0; i<60; i++) {
+            const m = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 10+Math.random()*10, 5), new THREE.MeshLambertMaterial({color:0xFF66AA}));
+            let x = (Math.random()-0.5)*200;
+            let z = (Math.random()-0.5)*200;
+            m.position.set(x, 5, z);
+            scene.add(m);
+            let bb = new THREE.Box3().setFromObject(m);
+            obstacles.push(bb);
+        }
+    }
+
+    function createBubbles() {
+        const geo = new THREE.SphereGeometry(0.2, 4, 4);
+        const mat = new THREE.MeshBasicMaterial({color:0x88CCFF, transparent:true, opacity:0.5});
+        for(let i=0; i<200; i++) {
+            const b = new THREE.Mesh(geo, mat);
+            b.position.set((Math.random()-0.5)*100, Math.random()*30, (Math.random()-0.5)*100);
+            scene.add(b);
+        }
+    }
+
+    function createJaggedRocks() {
+        const rockMat = new THREE.MeshLambertMaterial({color: 0x111111});
+        for(let i=0; i<150; i++) {
+            const geo = new THREE.TetrahedronGeometry(2 + Math.random()*5, 1);
+            const mesh = new THREE.Mesh(geo, rockMat);
+            let x = (Math.random()-0.5)*400;
+            let z = (Math.random()-0.5)*400;
+            if(Math.abs(x) < 30 && Math.abs(z) < 30) continue; 
+            mesh.position.set(x, 0, z);
+            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+            scene.add(mesh);
+            let bb = new THREE.Box3().setFromObject(mesh);
+            obstacles.push(bb);
+        }
+    }
+
+    function updateHUD() {
+        document.getElementById('enemyCount').innerText = enemiesKilled;
+        document.getElementById('enemyTotal').innerText = totalEnemiesToKill;
+        document.getElementById('progressInfo').style.display = (level === 5) ? 'none' : 'block';
+    }
+
+    function updateRadar() {
+        const radarBlips = document.getElementById('radar-blips');
+        radarBlips.innerHTML = '';
+        
+        let allEnemies = [...enemies, ...hydras];
+        let yaw = camera.rotation.y;
+        let cos = Math.cos(yaw);
+        let sin = Math.sin(yaw);
+
+        allEnemies.forEach(e => {
+            let dx = e.mesh.position.x - camera.position.x;
+            let dz = e.mesh.position.z - camera.position.z;
+            
+            let dist = Math.sqrt(dx*dx + dz*dz);
+            if(dist > 150) return; 
+            
+            let rx = dx * cos - dz * sin;
+            let rz = dx * sin + dz * cos;
+            
+            let radarX = 100 + (rx / 150) * 100;
+            let radarY = 100 + (rz / 150) * 100;
+            
+            let blip = document.createElement('div');
+            blip.className = 'radar-blip';
+            blip.style.left = radarX + 'px';
+            blip.style.top = radarY + 'px';
+            radarBlips.appendChild(blip);
+        });
+    }
+
+    function checkLevelProgress() {
+        if(enemiesKilled >= totalEnemiesToKill) {
+            if(level === 4) {
+                let progress = 0;
+                try {
+                    progress = parseInt(localStorage.getItem('anomalyProgress_v6') || '0');
+                } catch(e) {}
+                if(isNaN(progress)) progress = 0;
+
+                try {
+                    if (diff.name === 'Scientist' && progress < 1) localStorage.setItem('anomalyProgress_v6', '1');
+                    if (diff.name === 'Explorer' && progress < 2) localStorage.setItem('anomalyProgress_v6', '2');
+                } catch(e) {}
+
+                if(!diff.level5) endGame('Normal');
+                else startLevel(5);
+            } else {
+                startLevel(level + 1);
+            }
+        }
+    }
+
+    function triggerDeath(reason) {
+        gameState = 'dead';
+        document.exitPointerLock();
+        document.getElementById('hud').style.display = 'none';
+        document.getElementById('deathScreen').style.display = 'flex';
+        
+        const restartBtn = document.getElementById('restartBtn');
+        restartBtn.style.display = 'none';
+        setTimeout(() => {
+            if (gameState === 'dead') restartBtn.style.display = 'block';
+        }, 5000);
+
+        showSkroll('deathSkroll', SKROLLS[reason]);
+        if(bgmNode) { if(bgmNode.stop) bgmNode.stop(); }
+    }
+
+    function endGame(type) {
+        gameState = 'end';
+        document.exitPointerLock();
+        document.getElementById('hud').style.display = 'none';
+        
+        let title = "MISSION COMPLETE";
+        let text = "";
+        
+        if(type === 'Normal') text = SKROLLS.endNormal;
+        else if(type === 'Option 1') { title = "MISSION INDETERMINATE"; text = SKROLLS.endOpt1; }
+        else if(type === 'Option 2') text = SKROLLS.endOpt2;
+        
+        if (type === 'Option 1') {
+            document.getElementById('endScreen').style.background = "rgba(255,255,255,1)";
+            document.getElementById('endTitle').style.color = "black";
+        } else if (type === 'Option 2') {
+            document.getElementById('endScreen').style.background = "rgba(255,100,0,0.8)";
+        }
+
+        document.getElementById('endTitle').innerText = title;
+        document.getElementById('endScreen').style.display = 'flex';
+        
+        const endBtn = document.getElementById('endBtn');
+        endBtn.style.display = 'none';
+        setTimeout(() => {
+            if (gameState === 'end') endBtn.style.display = 'block';
+        }, 5000);
+
+        showSkroll('endSkroll', text);
+        if(bgmNode) { if(bgmNode.stop) bgmNode.stop(); }
+    }
+
+    updateGame();
+</script>
+</body>
+</html>```
