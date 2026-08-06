@@ -2,11 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Antarctic Anomaly 3D</title>
     <style>
         body {
             margin: 0; padding: 0; overflow: hidden; background-color: #000;
-            font-family: Arial, sans-serif; user-select: none;
+            font-family: Arial, sans-serif; 
+            user-select: none; -webkit-user-select: none; touch-action: none; /* Crucial for mobile */
         }
         #gameCanvas {
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: block;
@@ -32,7 +34,7 @@
             z-index: 100;
         }
         .init-text {
-            font-size: 30px; text-shadow: 2px 2px 0 #F00; margin-top: 20px; text-align: center;
+            font-size: clamp(20px, 5vw, 30px); text-shadow: 2px 2px 0 #F00; margin-top: 20px; text-align: center;
         }
         #titleScreen {
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -48,11 +50,11 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         #titleText {
-            font-size: 60px; font-weight: bold; color: #FFF; text-shadow: 4px 4px 0 #F00;
-            margin-bottom: 20px; font-family: 'Courier New', Courier, monospace;
+            font-size: clamp(30px, 8vw, 60px); font-weight: bold; color: #FFF; text-shadow: 4px 4px 0 #F00;
+            margin-bottom: 20px; font-family: 'Courier New', Courier, monospace; text-align: center;
         }
         .skroll-container {
-            width: 400px; height: 250px; overflow: hidden; border: 2px solid red;
+            width: 90%; max-width: 400px; height: 250px; overflow: hidden; border: 2px solid red;
             background: rgba(0, 0, 0, 0.8); margin-bottom: 20px; position: relative;
         }
         .skroll-text {
@@ -80,15 +82,15 @@
         }
 
         .diff-container {
-            font-size: 20px; font-family: monospace; color: #FFF; background: rgba(0,0,0,0.8);
-            padding: 15px 30px; border: 2px solid #555; border-radius: 5px; margin-bottom: 20px;
-            text-align: left; width: 450px; box-sizing: border-box;
+            font-size: clamp(14px, 3.5vw, 18px); font-family: monospace; color: #FFF; background: rgba(0,0,0,0.8);
+            padding: 8px 15px; border: 2px solid #555; border-radius: 5px; margin-bottom: 20px;
+            text-align: left; width: auto; max-width: 90vw; box-sizing: border-box;
         }
         .diff-container label {
-            display: block; margin: 15px 0; cursor: pointer; transition: opacity 0.2s;
+            display: block; margin: 8px 0; cursor: pointer; transition: opacity 0.2s;
         }
         .diff-container input[type="radio"] {
-            margin-right: 15px; transform: scale(1.5); cursor: pointer;
+            margin-right: 10px; transform: scale(1.3); cursor: pointer;
         }
         .diff-container input[type="radio"]:disabled {
             cursor: not-allowed;
@@ -99,7 +101,7 @@
 
         #hud {
             position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none;
-            display: none;
+            display: none; z-index: 10;
         }
         #crosshair {
             position: absolute; top: 50%; left: 50%; width: 20px; height: 20px;
@@ -110,8 +112,8 @@
             content: ''; position: absolute; top: 8px; left: 8px; width: 4px; height: 4px; background: red;
         }
         #radar {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 200px; height: 200px; border: 2px solid #0F0; border-radius: 50%;
+            position: absolute; top: 20px; right: 20px;
+            width: clamp(100px, 30vw, 200px); height: clamp(100px, 30vw, 200px); border: 2px solid #0F0; border-radius: 50%;
             background: rgba(0, 20, 0, 0.5); overflow: hidden;
         }
         #radar-center {
@@ -124,16 +126,44 @@
         }
         #hydraHealthContainer {
             position: absolute; bottom: 240px; left: 50%; transform: translateX(-50%);
-            width: 300px; display: none; flex-direction: column; gap: 5px;
+            width: 90%; max-width: 300px; display: none; flex-direction: column; gap: 5px;
         }
         .health-bar {
             width: 100%; height: 20px; background: #F00; border: 2px solid #FFF; box-sizing: border-box;
         }
         #progressInfo {
-            position: absolute; top: 20px; left: 20px; color: #FFF; font-size: 24px;
+            position: absolute; top: 20px; left: 20px; color: #FFF; font-size: clamp(16px, 5vw, 24px);
             font-family: 'Courier New', Courier, monospace; text-shadow: 2px 2px #000;
         }
         
+        /* Mobile Controls */
+        #mobileControls {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 5; display: none;
+        }
+        #joy-base {
+            position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px;
+            background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); 
+            border-radius: 50%; pointer-events: auto;
+        }
+        #joy-stick {
+            position: absolute; top: 35px; left: 35px; width: 50px; height: 50px;
+            background: rgba(255,255,255,0.5); border-radius: 50%; pointer-events: none;
+        }
+        .action-btn {
+            position: absolute; bottom: 30px; right: 30px; width: 90px; height: 90px;
+            background: rgba(255,0,0,0.3); border-radius: 50%; border: 3px solid rgba(255,0,0,0.6);
+            color: #FFF; font-weight: bold; font-family: monospace; font-size: 14px;
+            display: flex; justify-content: center; align-items: center; pointer-events: auto;
+            text-align: center;
+        }
+        .action-btn:active { background: rgba(255,0,0,0.6); }
+        #detonateBtn {
+            bottom: 140px; right: 30px; width: 70px; height: 70px; font-size: 11px;
+            background: rgba(255,165,0,0.3); border-color: rgba(255,165,0,0.6);
+        }
+        #detonateBtn:active { background: rgba(255,165,0,0.6); }
+
         canvas { image-rendering: pixelated; }
     </style>
 </head>
@@ -141,12 +171,17 @@
 
 <div id="uiLayer">
     <div id="preInitScreen">
-        <div style="width: 300px; height: 30px; border: 2px solid #FFF; background: #222; position: relative;">
-            <div id="loadingBar" style="width: 0%; height: 100%; background: #F00;"></div>
+        <!-- Progress Bar Overlay container -->
+        <div style="width: 300px; height: 40px; border: 2px solid #FFF; background: #222; position: relative; display: flex; align-items: center; justify-content: center;">
+            <div id="loadingBar" style="position: absolute; top: 0; left: 0; width: 0%; height: 100%; background: #F00;"></div>
+            <div id="loadingText" style="position: relative; z-index: 1; font-size: 20px; font-weight: bold; text-shadow: 1px 1px 0 #000;">LOADING... 0%</div>
         </div>
-        <div id="loadingText" style="margin-top: 15px; font-size: 24px;">LOADING... 0%</div>
         
-        <label id="muteLabel" style="margin-top: 30px; font-size: 22px; cursor: pointer; display: flex; align-items: center; z-index: 300;">
+        <label id="fullscreenLabel" style="margin-top: 40px; font-size: 22px; cursor: pointer; display: flex; align-items: center; z-index: 300;">
+            <input type="checkbox" id="fullscreenToggle" style="transform: scale(1.5); margin-right: 12px; cursor: pointer;"> FULL SCREEN
+        </label>
+
+        <label id="muteLabel" style="margin-top: 20px; font-size: 22px; cursor: pointer; display: flex; align-items: center; z-index: 300;">
             <input type="checkbox" id="muteToggle" style="transform: scale(1.5); margin-right: 12px; cursor: pointer;"> MUTE SOUND
         </label>
     </div>
@@ -154,7 +189,7 @@
     <div id="initScreen">
         <div class="skroll-container">
             <div class="skroll-text" id="introSkroll">
-                Top secret satellites from your government have detected unusual biological anomalies in an unexplored part of the Antarctic continent. They've sent robotic probes but all have been disabled by electromagnetic interference. They suspect an enemy nation has setup a clandestine underground bio-weapons facility. You are being sent on a mission to investigate and eliminate the facility. You are equipped with several days of supplies, harpoon gun, anomaly detector, and remote mines for the final objective of the mission... Good Luck and Godspeed!
+                Top secret satellites from your government have detected unusual biological anomalies in an unexplored part of the Antarctic continent. They've sent robotic probes, but all have been disabled by electromagnetic interference. They suspect an enemy nation has setup a clandestine underground bio-weapons facility. You are being sent on a mission to investigate and eliminate the facility. You are equipped with several days of supplies, harpoon gun, anomaly detector, and remote mines for the final objective of the mission... Good Luck and Godspeed!
             </div>
         </div>
         <div class="init-text">CLICK TO ACCEPT MISSION</div>
@@ -164,23 +199,30 @@
         <div id="titleContent">
             <div id="titleText">ANTARCTIC ANOMALY 3D</div>
             
-            <div class="diff-container" id="difficultySelect">
-                <label id="lblSci"><input type="radio" name="difficulty" value="0" id="radSci" checked> <span id="spanSci">Scientist (Easy)</span></label>
-                <label id="lblExp"><input type="radio" name="difficulty" value="1" id="radExp"> <span id="spanExp">Explorer (Medium)</span></label>
-                <label id="lblMar"><input type="radio" name="difficulty" value="2" id="radMar"> <span id="spanMar">Marine (Hard)</span></label>
-            </div>
+            <!-- Wrapping Difficulty and Start Button Next to Each Other -->
+            <div id="controlsWrapper" style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                <div class="diff-container" id="difficultySelect" style="margin-bottom: 0;">
+                    <label id="lblSci"><input type="radio" name="difficulty" value="0" id="radSci" checked> <span id="spanSci">Scientist (Easy)</span></label>
+                    <label id="lblExp"><input type="radio" name="difficulty" value="1" id="radExp"> <span id="spanExp">Explorer (Medium)</span></label>
+                    <label id="lblMar"><input type="radio" name="difficulty" value="2" id="radMar"> <span id="spanMar">Marine (Hard)</span></label>
+                </div>
 
-            <button class="btn" id="startBtn">Start Mission</button>
-            <div style="color: #AAA; margin-top: 15px; font-family: monospace; max-width: 300px; font-size: 14px; text-align: center;">Version 1.0, Aug 2026, Developed by <a href="https://gmorcate.github.io/bio/index.html" style="text-decoration: none;">GothicSun.</a>
-</div>
-            <div style="color: #AAA; margin-top: 15px; font-family: monospace; max-width: 300px; font-size: 14px; text-align: center;">AI assisted a.k.a. 100 junior developers cramed in a box.</div>
-            <div style="color: #AAA; margin-top: 15px; font-family: monospace; max-width: 300px; font-size: 14px; text-align: center;">This game is dedicated to the explorers who never returned from Antarctica.</div>
-            <div style="color: #AAA; margin-top: 15px; font-family: monospace; max-width: 350px; font-size: 14px; text-align: center;">Do you like this game? Buy me a Ko-fi!</div>
-            <div style="margin-top: 15px;">
-            <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support me on Ko-fi', '#72a4f2', 'A0Q024FNXK');kofiwidget2.draw();</script> 
+                <button class="btn" id="startBtn" style="margin: 0; white-space: nowrap;">Start Mission</button>
+            </div>
+        </div>
+
+        <!-- Single wrapping footer anchored to the bottom -->
+        <div style="position: absolute; bottom: 15px; left: 0; width: 100vw; padding: 0 15px; box-sizing: border-box; color: #AAA; font-family: monospace; font-size: 12px; text-align: center; line-height: 1.8;">
+            Version 1.1(mobile enabled), Aug 2026, Developed by <a href="https://gmorcate.github.io/bio/index.html" style="text-decoration: none; color:#72a4f2;">GothicSun.</a> | 
+            AI assisted a.k.a. 100 junior developers crammed in a box. | 
+            Dedicated to explorers who never returned from Antarctica. | 
+            Do you like this game? Buy me a Ko-fi! 
+            <span style="display: inline-block; vertical-align: middle; margin-left: 5px;">
+                <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script><script type='text/javascript'>kofiwidget2.init('Support me on Ko-fi', '#72a4f2', 'A0Q024FNXK');kofiwidget2.draw();</script> 
+            </span>
         </div>
     </div>
-    </div>
+    
     <div id="pauseScreen" style="display: none;">
         <div class="skroll-container">
             <div class="skroll-text" id="levelSkroll"></div>
@@ -189,7 +231,7 @@
     </div>
 
     <div id="deathScreen" style="display: none;">
-        <h1 style="color:red; font-family: monospace; font-size: 50px;">YOU DIED</h1>
+        <h1 style="color:red; font-family: monospace; font-size: clamp(30px, 8vw, 50px);">YOU DIED</h1>
         <div class="skroll-container">
             <div class="skroll-text" id="deathSkroll" style="animation-duration: 20s;"></div>
         </div>
@@ -197,11 +239,18 @@
     </div>
     
     <div id="endScreen" style="display: none;">
-        <h1 style="color:white; font-family: monospace; font-size: 40px;" id="endTitle">MISSION COMPLETE</h1>
+        <h1 style="color:white; font-family: monospace; font-size: clamp(24px, 6vw, 40px); text-align: center;" id="endTitle">MISSION COMPLETE</h1>
         <div class="skroll-container">
             <div class="skroll-text" id="endSkroll"></div>
         </div>
         <button class="btn bottom-btn" id="endBtn" style="display: none;">Return to Title</button>
+    </div>
+
+    <!-- HUD & Mobile Controls -->
+    <div id="mobileControls">
+        <div id="joy-base"><div id="joy-stick"></div></div>
+        <div class="action-btn" id="shootBtn">ACTION</div>
+        <div class="action-btn" id="detonateBtn" style="display:none;">DETONATE</div>
     </div>
 
     <div id="hud">
@@ -217,18 +266,20 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || 'ontouchstart' in window;
+
     const SKROLLS = {
         level1: "A helicopter has airdropped you on the edge of the ice shelf. You travel inland for two days following your detector. As you approach the detection site, you encounter a docile walrus colony. At the sight of you, the walruses become enraged and begin to attack! This is unnatural for these creatures. Something is amiss…",
         level2: "With the bravest walruses dead, the rest scamper away. Your detector leads you to an ice cave. You work your way down into the darkness. The caves open into colossal chambers, enough to fit a city inside… You notice an odd smell. Suddenly, you hear a rumbling, a stampede. You turn to look... you see giant monsters... ugly... screaming... in sullied white fur. Your heart sinks and your body freezes in fear… seconds feel like minutes as you swing your harpoon gun up and switch to full automatic...",
         level3: "The yeti retreat in fear of your powerful weapon which laid waste to dozens of their kin. These yeti have DNA anomalies, like nothing seen on Earth... You continue following your detector towards a stronger signal. After 3 days, you reach the lowest part of the cave system and find a warm zone with a pool of water. As you peer through its sheen, you see deep ocean and a distant orange glow several fathoms below. You don your scuba gear and set your gun to spread shot. As you descend into the abyss, you see dark purple shadows dancing in the blackness, just outside of view. You look over your shoulder and within a blink, a giant yellow eye appears!",
         level4: "The mindless giant squid do not fear your harpoons and swarm you with endless numbers. You extinguish the last of your harpoons as you rush towards the orange glow. As you approach it, you hear a humming, and the squid flee. Your detector begins to scream off the charts! You find a floating air pocket and it opens into a spacious volcanic chamber. You see lava flows, but something is wrong with them... You ready your mines...",
-        level5: "The hydra twins are dead and the remaining heads twitch and gurgle their final moments. You return to the surface. You begin to hear the humming sound again. Louder than ever, it begins vibrating your bones. You see a sparkling light from above. It begins to descend. You see a mirror like disc settle before you. Your mind struggles to comprehend dream from an unraveling reality. A ramp door opens towards you... your eyes fall into a daze... a minute passes, your shock subsides, and your mind returns. You realize this open door is an invitation... But why?! You quickly begin to have second thoughts and remember your primary objective... your priorities are conflicted... either enter the unknown universe... or complete your mission and return home...",
-        endNormal: "The hydra gurgles and falls silent. You stand still staring wide-eyed at the dead creature while your mind absorbs this traumatic experience. You take a deep breath and return to an even keel. You biopsy the carcass for your government’s laboratories to research. As you start the journey home with a hero’s tale in mind, you discover that the detector was destroyed during the battle. You leave the frigid continent without knowing if the anomaly is truly gone...",
-        endOpt1: "Your choice to brave the unknown has led to a close encounter with an extraterrestrial. Your fear gives way to peace when the being embraces you. Your life will never be the same again...",
-        endOpt2: "Your fear overwhelms your mind and a choice is made to destroy that which confounds you. You intend to complete your mission no matter how extraordinary the circumstance. You set a mine under the disc. As you detonate it, a chain reaction occurs. The disc’s massive energy is released and the anomaly is no more...",
-        deathWalrus: "You slip and fall on the ice. A white tusk impales you with a thousand pounds of pressure. Your body is thrashed around between several walruses until your breath stops.",
+        level5: "The hydra twins are dead and the remaining heads twitch and gurgle their final moments. You return to the surface. You begin to hear the humming sound again. Louder than ever, it begins vibrating your bones. You see a sparkling light from above. It begins to descend. You see a mirror like disc settle before you. Your mind struggles to comprehend dream from an unraveling reality. A ramp door opens towards you... An invitation? But why? You remember your primary objective... your priorities are conflicted... either enter the unknown universe... or complete your mission and destroy the anomaly...",
+        endNormal: "The hydra's blood pours over the jagged black rocks as it twitches in its last moments. You stand still staring wide-eyed at the dead creature while your mind absorbs this traumatic experience. You take a deep breath and return to an even keel. You biopsy the carcass for your government’s laboratories to research. You discover that your detector was destroyed during the battle and you must leave the frigid continent without knowing if the anomaly is truly gone...",
+        endOpt1: "Your choice to explore the unknown has led to a close encounter with an extraterrestrial. The being is peaceful though you don't understand know what will transpire. You may not return home...",
+        endOpt2: "You choose to complete your mission despite the extraordinary the circumstance. You detonate a mine under the disc. A chain reaction occurs and the disc’s massive energy is released. You and the anomaly are vaporized...",
+        deathWalrus: "You slip and fall on the ice. A white tusk impales you with a thousand pounds of pressure. Your body is thrashed around between several walruses until your breath stops...",
         deathYeti: "A yeti dismembers your arm with ease. You cry out in agony. Another bites a hunk of your leg and chews it grotesquely. You slip into shock and in your remaining seconds, all you can hear are the roars from these soulless beasts…",
-        deathSquid: "Your goggles are ripped off by a tentacle and you become blinded. You feel slimy tentacles wrap around you. A hard beak nudges on the nape of your neck. You feel a quick pinch. Your neck snaps and you are instantly killed…",
+        deathSquid: "Your goggles are ripped off and you become blinded. You feel slimy tentacles wrap around you. A hard beak nudges on the nape of your neck. You feel a quick pinch. Your neck snaps and you are instantly killed…",
         deathMine: "In your haste, you have neglected a mine you have laid. The concussive wave envelops your body. You see a flash of white light and nothing more…",
         deathHydra: "An unexpected magnetic force pulls you towards the hydra. You underestimate its reach and a hydra head clenches its jaws on your leg. It lifts you several stories into the air and while another hydra head tugs you apart... Your entrails are strewn across the jagged rocks below..."
     };
@@ -287,11 +338,10 @@
 
     let bgmNode = null;
     
-    document.body.addEventListener('click', () => {
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume().catch(() => {});
-        }
-    });
+    // Enable audio on tap/click globally
+    const enableAudio = () => { if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {}); };
+    document.body.addEventListener('click', enableAudio);
+    document.body.addEventListener('touchstart', enableAudio, {passive: true});
 
     function createNoiseBuffer() {
         const bufferSize = audioCtx.sampleRate * 2;
@@ -454,6 +504,19 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.insertBefore(renderer.domElement, document.getElementById('uiLayer'));
 
+    // Handle Window Resize
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        
+        if (typeof titleCamera !== 'undefined') {
+            titleCamera.aspect = window.innerWidth / window.innerHeight;
+            titleCamera.updateProjectionMatrix();
+        }
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
     const titleScene = new THREE.Scene();
     const titleCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     titleCamera.position.set(0, 5, 0);
@@ -491,15 +554,27 @@
     tailRotor.name = "tailRotor";
     
     const skid1 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 6), skidMat);
-    skid1.rotation.x = Math.PI/2; skid1.position.set(2, -1.8, 0);
-    const skid2 = skid1.clone(); skid2.position.set(-2, -1.8, 0);
+    skid1.rotation.x = Math.PI / 2; 
+    skid1.position.set(2.5, -2.5, 0); // Positioned wider than the body and lower
     
+    const skid2 = skid1.clone(); 
+    skid2.position.set(-2.5, -2.5, 0);
+    
+    // Right struts (positive X)
     const strut1 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.5), skidMat);
-    strut1.position.set(2, -1, 1.5); strut1.rotation.z = -Math.PI/8;
-    const strut2 = strut1.clone(); strut2.position.set(2, -1, -1.5);
+    strut1.position.set(2.0, -2.0, 1.5); // Centered exactly between the body and skid
+    strut1.rotation.z = Math.PI / 4;     // Angled outward at 45 degrees
+    
+    const strut2 = strut1.clone(); 
+    strut2.position.set(2.0, -2.0, -1.5);
+    
+    // Left struts (negative X)
     const strut3 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.5), skidMat);
-    strut3.position.set(-2, -1, 1.5); strut3.rotation.z = Math.PI/8;
-    const strut4 = strut3.clone(); strut4.position.set(-2, -1, -1.5);
+    strut3.position.set(-2.0, -2.0, 1.5); // Centered exactly between the body and skid
+    strut3.rotation.z = -Math.PI / 4;     // Angled outward at 45 degrees
+    
+    const strut4 = strut3.clone(); 
+    strut4.position.set(-2.0, -2.0, -1.5);
     
     titleHeli.add(heliBody, heliCockpit, sideWindow, heliTail, tailFin, rotorMast, mainRotorGroup, tailRotor, skid1, skid2, strut1, strut2, strut3, strut4);
     titleHeli.position.set(6, 4, -12);
@@ -584,19 +659,58 @@
         playBGM('timpani');
     }
 
+    // Fullscreen Toggle Label Logic
+    document.getElementById('fullscreenToggle').addEventListener('change', (e) => {
+        const doc = document.documentElement;
+        if (e.target.checked) {
+            if (doc.requestFullscreen) {
+                doc.requestFullscreen();
+            } else if (doc.webkitRequestFullscreen) {
+                doc.webkitRequestFullscreen();
+            }
+        } else {
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+    });
+
+    const updateFullscreenBtn = () => {
+        const isFS = document.fullscreenElement || document.webkitFullscreenElement;
+        document.getElementById('fullscreenToggle').checked = !!isFS;
+    };
+    document.addEventListener('fullscreenchange', updateFullscreenBtn);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
+
+    // Proceed past the Pre-Init Screen
     document.getElementById('preInitScreen').addEventListener('click', (e) => {
-        if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'label') return; 
+        const tag = e.target.tagName.toLowerCase();
+        // Prevent progressing if interacting with checkbox or label
+        if (tag === 'input' || tag === 'label') return; 
         proceedToInit();
     });
 
     document.getElementById('initScreen').addEventListener('click', function(e) {
         audioCtx.resume().catch(()=>{});
+        
+        // Reset Aspect Ratio cleanly right as the mission is accepted
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        titleCamera.aspect = window.innerWidth / window.innerHeight;
+        titleCamera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
         this.style.display = 'none';
         document.getElementById('titleScreen').style.display = 'flex';
         playBGM('helicopter'); 
         gameState = 'title';
     });
     
+    // Desktop Input Listeners
     document.addEventListener('keydown', (e) => { 
         if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = true; 
         if(e.code === 'Space' && gameState === 'playing') detonateMines();
@@ -604,7 +718,9 @@
     document.addEventListener('keyup', (e) => { 
         if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = false; 
     });
+    
     document.addEventListener('mousedown', (e) => {
+        if(isMobile) return; // Prevent interference on mobile
         if(gameState === 'playing' && document.pointerLockElement) {
             mouseDown = true;
             if(level === 1) executeMeleeHit(); 
@@ -625,6 +741,123 @@
         }
     });
 
+    // Mobile Control Listeners (Joystick & View)
+    const joyBase = document.getElementById('joy-base');
+    const joyStick = document.getElementById('joy-stick');
+    let joyTouchId = null;
+    let joyCenterX, joyCenterY;
+    const joyMaxRadius = 40;
+
+    joyBase.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        let t = e.changedTouches[0];
+        joyTouchId = t.identifier;
+        let rect = joyBase.getBoundingClientRect();
+        joyCenterX = rect.left + rect.width / 2;
+        joyCenterY = rect.top + rect.height / 2;
+        updateJoystick(t.clientX, t.clientY);
+    }, {passive: false});
+
+    joyBase.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        for(let i=0; i<e.changedTouches.length; i++) {
+            let t = e.changedTouches[i];
+            if(t.identifier === joyTouchId) updateJoystick(t.clientX, t.clientY);
+        }
+    }, {passive: false});
+
+    joyBase.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        for(let i=0; i<e.changedTouches.length; i++) {
+            if(e.changedTouches[i].identifier === joyTouchId) {
+                joyTouchId = null;
+                joyStick.style.transform = `translate(0px, 0px)`;
+                keys.w = keys.a = keys.s = keys.d = false;
+            }
+        }
+    });
+
+    function updateJoystick(x, y) {
+        let dx = x - joyCenterX;
+        let dy = y - joyCenterY;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist > joyMaxRadius) {
+            dx = (dx/dist) * joyMaxRadius;
+            dy = (dy/dist) * joyMaxRadius;
+        }
+        joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
+
+        // Deadzone check
+        keys.w = dy < -10;
+        keys.s = dy > 10;
+        keys.a = dx < -10;
+        keys.d = dx > 10;
+    }
+
+    // Touch looking mechanism
+    let lookTouchId = null;
+    let lastTouchX = 0, lastTouchY = 0;
+
+    document.addEventListener('touchstart', (e) => {
+        if (gameState !== 'playing' || !isMobile) return;
+        for(let i=0; i<e.changedTouches.length; i++) {
+            let t = e.changedTouches[i];
+            // Only trigger Look mechanism on the right side of screen, avoiding action buttons
+            if (t.clientX > window.innerWidth / 2 && !t.target.closest('.action-btn')) {
+                lookTouchId = t.identifier;
+                lastTouchX = t.clientX;
+                lastTouchY = t.clientY;
+            }
+        }
+    }, {passive: false});
+
+    document.addEventListener('touchmove', (e) => {
+        if (gameState !== 'playing' || !isMobile) return;
+        for(let i=0; i<e.changedTouches.length; i++) {
+            let t = e.changedTouches[i];
+            if (t.identifier === lookTouchId) {
+                let dx = t.clientX - lastTouchX;
+                let dy = t.clientY - lastTouchY;
+                lastTouchX = t.clientX;
+                lastTouchY = t.clientY;
+
+                camera.rotation.y -= dx * 0.004;
+                camera.rotation.x -= dy * 0.004;
+                camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
+                camera.rotation.z = 0;
+                camera.rotation.order = "YXZ";
+            }
+        }
+    }, {passive: false});
+
+    document.addEventListener('touchend', (e) => {
+        for(let i=0; i<e.changedTouches.length; i++) {
+            if(e.changedTouches[i].identifier === lookTouchId) {
+                lookTouchId = null;
+            }
+        }
+    });
+
+    // Mobile Action buttons
+    const shootBtn = document.getElementById('shootBtn');
+    shootBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        mouseDown = true;
+        if(level === 1) executeMeleeHit();
+        else if(level >= 4) tossMine();
+    }, {passive: false});
+    shootBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        mouseDown = false;
+    });
+
+    const detonateBtn = document.getElementById('detonateBtn');
+    detonateBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (gameState === 'playing') detonateMines();
+    }, {passive: false});
+
+
     const materialCache = {
         walrus: new THREE.MeshLambertMaterial({ color: 0x008800 }),
         tusk: new THREE.MeshLambertMaterial({ color: 0xFFFFFF }),
@@ -639,7 +872,6 @@
         saucer: new THREE.MeshLambertMaterial({ color: 0x88AAFF, metalness: 0.8 })
     };
 
-    // --- Arrowhead Tip on Standard Shaft (No Flattening) Builder ---
     function createHarpoonMesh() {
         const group = new THREE.Group();
         
@@ -665,18 +897,15 @@
     meleeHarpoon.position.set(0.5, -0.5, 1.0); 
     camera.add(meleeHarpoon);
 
-    // --- Dynamic Persistent Wound Marker Function (Proper Extrusion) ---
     function addWoundMarker(mesh, type) {
         if (type !== 'walrus' && type !== 'yeti') return;
 
         const wound = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), materialCache.wound);
         
-        // Determine core radius & height offset of target body geometry
         let yOffset = 2; // Walrus
         let radius = 1.6;
         if (type === 'yeti') { yOffset = 4.5; radius = 1.8; }
         
-        // Angle to spawn the wound block safely OUTSIDE the radius of the cylinder/box body
         let angle = Math.random() * Math.PI * 2;
         
         wound.position.set(
@@ -931,7 +1160,6 @@
             scene.add(pGroup);
             let dir = new THREE.Vector3(0,0,-1).applyQuaternion(pGroup.quaternion);
             
-            // Increased by 50% setting base magnitude to 75
             let vel = dir.multiplyScalar(125); 
             projectiles.push({ mesh: pGroup, vel: vel });
         }
@@ -1041,8 +1269,9 @@
         cutsceneType = type;
         cutsceneTimer = 0;
         
-        document.exitPointerLock();
+        if (!isMobile) document.exitPointerLock();
         document.getElementById('hud').style.display = 'none';
+        document.getElementById('mobileControls').style.display = 'none';
 
         if (type === 'Option 1') {
             scene.clear();
@@ -1183,7 +1412,6 @@
             p.vel.y -= 30 * dt; 
             p.mesh.position.add(p.vel.clone().multiplyScalar(dt));
             
-            // Adjust visual pitch dynamically to match the arc trajectory
             p.mesh.lookAt(p.mesh.position.clone().add(p.vel));
             
             if (p.mesh.position.y < 0 || p.mesh.position.length() > 500) {
@@ -1298,10 +1526,18 @@
 
         if (level >= 4) {
             hydraPullTimer += dt;
-            let cycleTime = hydraPullTimer % 30;
-            let isPulling = cycleTime >= 10 && cycleTime < 20;
             
-            hydras.forEach(h => {
+            hydras.forEach((h, index) => {
+                let localTimer = hydraPullTimer;
+                
+                // Decrease magnetic pull delay by 5 seconds on the second hydra on Marine difficulty
+                if (diff.name === 'Marine' && index === 1) {
+                    localTimer += 5;
+                }
+
+                let cycleTime = localTimer % 30;
+                let isPulling = cycleTime >= 10 && cycleTime < 20;
+
                 h.hp = Math.min(h.maxHp, h.hp + 5 * dt);
                 
                 let vortex = h.mesh.getObjectByName('vortex');
@@ -1404,13 +1640,15 @@
     document.getElementById('continueBtn').addEventListener('click', () => {
         document.getElementById('pauseScreen').style.display = 'none';
         gameState = 'playing';
-        document.body.requestPointerLock();
+        if (!isMobile) document.body.requestPointerLock();
         document.getElementById('hud').style.display = 'block';
+        if (isMobile) document.getElementById('mobileControls').style.display = 'block';
     });
 
     function returnToTitle() {
         document.getElementById('deathScreen').style.display = 'none';
         document.getElementById('endScreen').style.display = 'none';
+        document.getElementById('mobileControls').style.display = 'none';
         
         document.getElementById('endScreen').style.background = "rgba(0,0,0,0.6)";
         document.getElementById('endTitle').style.color = "white";
@@ -1445,6 +1683,8 @@
         level = n;
         gameState = 'paused';
         document.getElementById('hud').style.display = 'none';
+        document.getElementById('mobileControls').style.display = 'none';
+        document.getElementById('detonateBtn').style.display = (level >= 4) ? 'flex' : 'none';
         document.getElementById('pauseScreen').style.display = 'flex';
         document.getElementById('hydraHealthContainer').style.display = 'none';
         document.getElementById('hydraHealthBar2').style.display = 'none';
@@ -1460,7 +1700,7 @@
         hydraPullTimer = 0;
         camera.position.set(0, 5, 0);
         camera.rotation.set(0,0,0);
-        document.exitPointerLock();
+        if (!isMobile) document.exitPointerLock();
 
         scene.add(new THREE.AmbientLight(0x404040));
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
@@ -1669,8 +1909,9 @@
 
     function triggerDeath(reason) {
         gameState = 'dead';
-        document.exitPointerLock();
+        if (!isMobile) document.exitPointerLock();
         document.getElementById('hud').style.display = 'none';
+        document.getElementById('mobileControls').style.display = 'none';
         document.getElementById('deathScreen').style.display = 'flex';
         
         const restartBtn = document.getElementById('restartBtn');
@@ -1685,8 +1926,9 @@
 
     function endGame(type) {
         gameState = 'end';
-        document.exitPointerLock();
+        if (!isMobile) document.exitPointerLock();
         document.getElementById('hud').style.display = 'none';
+        document.getElementById('mobileControls').style.display = 'none';
         
         let title = "MISSION COMPLETE";
         let text = "";
@@ -1718,4 +1960,4 @@
     updateGame();
 </script>
 </body>
-</html>```
+</html>
