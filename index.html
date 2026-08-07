@@ -447,7 +447,7 @@
             const lfo = audioCtx.createOscillator();
             lfo.type = 'sine'; lfo.frequency.value = 0.1;
             const lfoGain = audioCtx.createGain();
-            lfoGain.gain.value = 400;
+            lfoGain.gain.value = 600;
             lfo.connect(lfoGain); lfoGain.connect(filter.frequency);
             noise.connect(filter); filter.connect(masterGain);
             noise.start(); lfo.start();
