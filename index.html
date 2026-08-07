@@ -53,9 +53,15 @@
             font-size: clamp(30px, 8vw, 60px); font-weight: bold; color: #FFF; text-shadow: 4px 4px 0 #F00;
             margin-bottom: 20px; font-family: 'Courier New', Courier, monospace; text-align: center;
         }
+        .skroll-wrapper {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
         .skroll-container {
             width: 90%; max-width: 400px; height: 250px; overflow: hidden; border: 2px solid red;
-            background: rgba(0, 0, 0, 0.8); margin-bottom: 20px; position: relative;
+            background: rgba(0, 0, 0, 0.8); position: relative;
         }
         .skroll-text {
             color: red; font-family: serif; font-size: 20px; line-height: 1.5;
@@ -67,7 +73,7 @@
             100% { top: -250%; } 
         }
         .btn {
-            background: #F00; color: #FFF; border: 2px solid #FFF; padding: 10px 20px;
+            background: #000; color: #FFF; border: 2px solid #F00; padding: 5px 10px;
             font-size: 20px; cursor: pointer; font-family: 'Courier New', Courier, monospace;
             text-transform: uppercase; margin: 10px;
         }
@@ -76,9 +82,13 @@
         
         .bottom-btn {
             position: absolute;
-            bottom: 50px;
+            top: 100%; /* Anchors exactly at the bottom of the wrapper (and skroll) */
             left: 50%;
             transform: translateX(-50%);
+            z-index: 20;
+            margin: 0;
+            margin-top: -2px; /* Pulls up slightly to sit perfectly flush with the red border */
+            white-space: nowrap;
         }
 
         .diff-container {
@@ -125,7 +135,7 @@
             border-radius: 50%; transform: translate(-50%, -50%);
         }
         #hydraHealthContainer {
-            position: absolute; bottom: 240px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 300px; display: none; flex-direction: column; gap: 5px;
         }
         .health-bar {
@@ -177,9 +187,7 @@
             <div id="loadingText" style="position: relative; z-index: 1; font-size: 20px; font-weight: bold; text-shadow: 1px 1px 0 #000;">LOADING... 0%</div>
         </div>
         
-        <label id="fullscreenLabel" style="margin-top: 40px; font-size: 22px; cursor: pointer; display: flex; align-items: center; z-index: 300;">
-            <input type="checkbox" id="fullscreenToggle" style="transform: scale(1.5); margin-right: 12px; cursor: pointer;"> FULL SCREEN
-        </label>
+        
 
         <label id="muteLabel" style="margin-top: 20px; font-size: 22px; cursor: pointer; display: flex; align-items: center; z-index: 300;">
             <input type="checkbox" id="muteToggle" style="transform: scale(1.5); margin-right: 12px; cursor: pointer;"> MUTE SOUND
@@ -187,15 +195,18 @@
     </div>
 
     <div id="initScreen">
-        <div class="skroll-container">
+        <div class="skroll-container" style="margin-bottom: 20px;">
             <div class="skroll-text" id="introSkroll">
                 Top secret satellites from your government have detected unusual biological anomalies in an unexplored part of the Antarctic continent. They've sent robotic probes, but all have been disabled by electromagnetic interference. They suspect an enemy nation has setup a clandestine underground bio-weapons facility. You are being sent on a mission to investigate and eliminate the facility. You are equipped with several days of supplies, harpoon gun, anomaly detector, and remote mines for the final objective of the mission... Good Luck and Godspeed!
             </div>
         </div>
-        <div class="init-text">CLICK TO ACCEPT MISSION</div>
+        <button class="btn init-text" style="text-shadow: none;">ACCEPT MISSION</button>
     </div>
 
     <div id="titleScreen">
+    <label id="fullscreenLabel" style="position: absolute; top: 20px; left: 20px; font-size: 16px; color: #FFF; font-family: monospace; cursor: pointer; display: flex; align-items: center; z-index: 300; background: rgba(0,0,0,0.5); padding: 8px 12px; border: 1px solid #555; border-radius: 5px;">
+        <input type="checkbox" id="fullscreenToggle" style="transform: scale(1.3); margin-right: 10px; cursor: pointer;"> FULL SCREEN
+    </label>
         <div id="titleContent">
             <div id="titleText">ANTARCTIC ANOMALY 3D</div>
             
@@ -204,7 +215,7 @@
                 <div class="diff-container" id="difficultySelect" style="margin-bottom: 0;">
                     <label id="lblSci"><input type="radio" name="difficulty" value="0" id="radSci" checked> <span id="spanSci">Scientist (Easy)</span></label>
                     <label id="lblExp"><input type="radio" name="difficulty" value="1" id="radExp"> <span id="spanExp">Explorer (Medium)</span></label>
-                    <label id="lblMar"><input type="radio" name="difficulty" value="2" id="radMar"> <span id="spanMar">Marine (Hard)</span></label>
+                    <label id="lblMar"><input type="radio" name="difficulty" value="2" id="radMar"> <span id="spanMar">Operator (Hard)</span></label>
                 </div>
 
                 <button class="btn" id="startBtn" style="margin: 0; white-space: nowrap;">Start Mission</button>
@@ -212,7 +223,7 @@
         </div>
 
         <!-- Single wrapping footer anchored to the bottom -->
-        <div style="position: absolute; bottom: 15px; left: 0; width: 100vw; padding: 0 15px; box-sizing: border-box; color: #AAA; font-family: monospace; font-size: 12px; text-align: center; line-height: 1.8;">
+        <div style="position: absolute; bottom: 15px; left: 0; width: 100vw; padding: 0 15px; box-sizing: border-box; color: #AAA; font-family: monospace; font-size: 14px; text-align: center; line-height: 1.8;">
             Version 1.1(mobile enabled), Aug 2026, Developed by <a href="https://gmorcate.github.io/bio/index.html" style="text-decoration: none; color:#72a4f2;">GothicSun.</a> | 
             AI assisted a.k.a. 100 junior developers crammed in a box. | 
             Dedicated to explorers who never returned from Antarctica. | 
@@ -224,26 +235,32 @@
     </div>
     
     <div id="pauseScreen" style="display: none;">
-        <div class="skroll-container">
-            <div class="skroll-text" id="levelSkroll"></div>
+        <div class="skroll-wrapper">
+            <div class="skroll-container">
+                <div class="skroll-text" id="levelSkroll"></div>
+            </div>
+            <button class="btn bottom-btn" id="continueBtn" style="display: none;">Continue</button>
         </div>
-        <button class="btn bottom-btn" id="continueBtn" style="display: none;">Continue</button>
     </div>
 
     <div id="deathScreen" style="display: none;">
-        <h1 style="color:red; font-family: monospace; font-size: clamp(30px, 8vw, 50px);">YOU DIED</h1>
-        <div class="skroll-container">
-            <div class="skroll-text" id="deathSkroll" style="animation-duration: 20s;"></div>
+        <h1 style="color:red; font-family: monospace; font-size: clamp(30px, 8vw, 50px); margin-bottom: 5px;">YOU DIED</h1>
+        <div class="skroll-wrapper">
+            <div class="skroll-container">
+                <div class="skroll-text" id="deathSkroll" style="animation-duration: 20s;"></div>
+            </div>
+            <button class="btn bottom-btn" id="restartBtn" style="display: none;">Redeploy Mission</button>
         </div>
-        <button class="btn bottom-btn" id="restartBtn" style="display: none;">Return to Title</button>
     </div>
     
     <div id="endScreen" style="display: none;">
-        <h1 style="color:white; font-family: monospace; font-size: clamp(24px, 6vw, 40px); text-align: center;" id="endTitle">MISSION COMPLETE</h1>
-        <div class="skroll-container">
-            <div class="skroll-text" id="endSkroll"></div>
+        <h1 style="color:white; font-family: monospace; font-size: clamp(24px, 6vw, 40px); text-align: center; margin-bottom: 5px;" id="endTitle">MISSION COMPLETE</h1>
+        <div class="skroll-wrapper">
+            <div class="skroll-container">
+                <div class="skroll-text" id="endSkroll"></div>
+            </div>
+            <button class="btn bottom-btn" id="endBtn" style="display: none;">Redeploy Mission</button>
         </div>
-        <button class="btn bottom-btn" id="endBtn" style="display: none;">Return to Title</button>
     </div>
 
     <!-- HUD & Mobile Controls -->
@@ -271,23 +288,23 @@
     const SKROLLS = {
         level1: "A helicopter has airdropped you on the edge of the ice shelf. You travel inland for two days following your detector. As you approach the detection site, you encounter a docile walrus colony. At the sight of you, the walruses become enraged and begin to attack! This is unnatural for these creatures. Something is amiss…",
         level2: "With the bravest walruses dead, the rest scamper away. Your detector leads you to an ice cave. You work your way down into the darkness. The caves open into colossal chambers, enough to fit a city inside… You notice an odd smell. Suddenly, you hear a rumbling, a stampede. You turn to look... you see giant monsters... ugly... screaming... in sullied white fur. Your heart sinks and your body freezes in fear… seconds feel like minutes as you swing your harpoon gun up and switch to full automatic...",
-        level3: "The yeti retreat in fear of your powerful weapon which laid waste to dozens of their kin. These yeti have DNA anomalies, like nothing seen on Earth... You continue following your detector towards a stronger signal. After 3 days, you reach the lowest part of the cave system and find a warm zone with a pool of water. As you peer through its sheen, you see deep ocean and a distant orange glow several fathoms below. You don your scuba gear and set your gun to spread shot. As you descend into the abyss, you see dark purple shadows dancing in the blackness, just outside of view. You look over your shoulder and within a blink, a giant yellow eye appears!",
+        level3: "The yeti retreat in fear of your powerful weapon which laid waste to dozens of their kin. These yeti have DNA anomalies, like nothing seen on Earth... You continue following your detector towards a stronger signal. After 3 days, you reach the lowest part of the cave system and find a warm zone with a pool of water. As you peer through its sheen, you see deep ocean and a distant orange glow several fathoms below. You don your scuba gear and modify your gun to shoot three rounds at once. As you descend into the abyss, you see dark purple shadows dancing in the blackness, just outside of view. You look over your shoulder and within a blink, a giant yellow eye appears!",
         level4: "The mindless giant squid do not fear your harpoons and swarm you with endless numbers. You extinguish the last of your harpoons as you rush towards the orange glow. As you approach it, you hear a humming, and the squid flee. Your detector begins to scream off the charts! You find a floating air pocket and it opens into a spacious volcanic chamber. You see lava flows, but something is wrong with them... You ready your mines...",
-        level5: "The hydra twins are dead and the remaining heads twitch and gurgle their final moments. You return to the surface. You begin to hear the humming sound again. Louder than ever, it begins vibrating your bones. You see a sparkling light from above. It begins to descend. You see a mirror like disc settle before you. Your mind struggles to comprehend dream from an unraveling reality. A ramp door opens towards you... An invitation? But why? You remember your primary objective... your priorities are conflicted... either enter the unknown universe... or complete your mission and destroy the anomaly...",
-        endNormal: "The hydra's blood pours over the jagged black rocks as it twitches in its last moments. You stand still staring wide-eyed at the dead creature while your mind absorbs this traumatic experience. You take a deep breath and return to an even keel. You biopsy the carcass for your government’s laboratories to research. You discover that your detector was destroyed during the battle and you must leave the frigid continent without knowing if the anomaly is truly gone...",
-        endOpt1: "Your choice to explore the unknown has led to a close encounter with an extraterrestrial. The being is peaceful though you don't understand know what will transpire. You may not return home...",
-        endOpt2: "You choose to complete your mission despite the extraordinary the circumstance. You detonate a mine under the disc. A chain reaction occurs and the disc’s massive energy is released. You and the anomaly are vaporized...",
-        deathWalrus: "You slip and fall on the ice. A white tusk impales you with a thousand pounds of pressure. Your body is thrashed around between several walruses until your breath stops...",
+        level5: "The hydra twins are dead and the remaining heads twitch and gurgle their final moments. You return to the surface. You begin to hear a strange warping sound. The volume rises and begins vibrating your bones. You see a sparkling light from above. It begins to descend. You see a mirror like disc settle before you. Your mind struggles to comprehend dream from an unraveling reality. A ramp door opens towards you... An invitation? But why? You remember your primary objective... your priorities are conflicted... either enter the unknown vessel... or complete your mission and destroy the anomaly...",
+        endNormal: "The hydra's blood pours over the floor as it twitches its last moments. You stand still staring wide-eyed at the dead creature while your mind absorbs this traumatic experience. You take a deep breath and return to an even keel. You biopsy the carcass for your government’s laboratories to research. You discover that your detector was destroyed during the battle and you must leave the frigid continent without knowing if the anomaly is truly gone...",
+        endOpt1: "Your choice to explore the unknown has led to a close encounter with an extraterrestrial. The being is peaceful, though you don't understand what will transpire. You may not return home...",
+        endOpt2: "You choose to complete your mission despite the extraordinary circumstance. You detonate a mine under the disc. A chain reaction occurs and the disc’s massive energy is released. You and the anomaly are vaporized...",
+        deathWalrus: "You slip on the ice and a white tusk impales you with a thousand pounds of pressure. Your body is thrashed around between several walruses until your breath stops...",
         deathYeti: "A yeti dismembers your arm with ease. You cry out in agony. Another bites a hunk of your leg and chews it grotesquely. You slip into shock and in your remaining seconds, all you can hear are the roars from these soulless beasts…",
-        deathSquid: "Your goggles are ripped off and you become blinded. You feel slimy tentacles wrap around you. A hard beak nudges on the nape of your neck. You feel a quick pinch. Your neck snaps and you are instantly killed…",
-        deathMine: "In your haste, you have neglected a mine you have laid. The concussive wave envelops your body. You see a flash of white light and nothing more…",
-        deathHydra: "An unexpected magnetic force pulls you towards the hydra. You underestimate its reach and a hydra head clenches its jaws on your leg. It lifts you several stories into the air and while another hydra head tugs you apart... Your entrails are strewn across the jagged rocks below..."
+        deathSquid: "Your goggles are ripped off and you are blinded. You feel slimy tentacles wrap around you. A hard beak nudges on the nape of your neck. You feel a quick pinch. Your neck snaps and you are instantly killed…",
+        deathMine: "You trigger the mines using your remote detonator. In your haste, you have overlooked a mine just behind your feet. A concussive wave shatters your body. You see a flash of white light and nothing more…",
+        deathHydra: "An unexpected magnetic force pulls you towards the hydra. You underestimate its reach and a hydra head clenches its jaws on your leg. It lifts you several stories into the air while another hydra tugs you apart... Your entrails are strewn across the jagged rocks below..."
     };
 
     const DIFFICULTIES = [
         { name: "Scientist", killReq: 4, activeReq: 8, hydras: 1, level5: false, speed: 1.0 },
-        { name: "Explorer", killReq: 8, activeReq: 16, hydras: 1, level5: false, speed: 1.0 },
-        { name: "Marine", killReq: 16, activeReq: 32, hydras: 2, level5: true, speed: 1.5 }
+        { name: "Explorer", killReq: 8, activeReq: 16, hydras: 1, level5: false, speed: 1.8 },
+        { name: "Operator", killReq: 16, activeReq: 32, hydras: 2, level5: true, speed: 1.8 }
     ];
 
     function initDifficultyLocks() {
@@ -316,12 +333,12 @@
 
         if (progress < 2) {
             radMar.disabled = true;
-            document.getElementById('spanMar').innerText = "Marine (Hard) [LOCKED]";
+            document.getElementById('spanMar').innerText = "Operator (Hard) [LOCKED]";
             lblMar.style.opacity = "0.5";
             lblMar.style.pointerEvents = "none";
         } else {
             radMar.disabled = false;
-            document.getElementById('spanMar').innerText = "Marine (Hard)";
+            document.getElementById('spanMar').innerText = "Operator (Hard)";
             lblMar.style.opacity = "1";
             lblMar.style.pointerEvents = "auto";
         }
@@ -659,19 +676,36 @@
         playBGM('timpani');
     }
 
+    // Unified Fullscreen and Orientation locking helper
+    function goFullscreenAndLock() {
+        const doc = document.documentElement;
+        if (doc.requestFullscreen) {
+            doc.requestFullscreen().then(() => {
+                if (isMobile && screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(()=>{});
+                }
+            }).catch(()=>{});
+        } else if (doc.webkitRequestFullscreen) {
+            doc.webkitRequestFullscreen();
+            if (isMobile && screen.orientation && screen.orientation.lock) {
+                // webkitRequestFullscreen might not return a promise, attempt lock directly
+                screen.orientation.lock('landscape').catch(()=>{});
+            }
+        }
+    }
+
     // Fullscreen Toggle Label Logic
     document.getElementById('fullscreenToggle').addEventListener('change', (e) => {
-        const doc = document.documentElement;
         if (e.target.checked) {
-            if (doc.requestFullscreen) {
-                doc.requestFullscreen();
-            } else if (doc.webkitRequestFullscreen) {
-                doc.webkitRequestFullscreen();
-            }
+            goFullscreenAndLock();
         } else {
             if (document.fullscreenElement || document.webkitFullscreenElement) {
                 if (document.exitFullscreen) {
-                    document.exitFullscreen();
+                    document.exitFullscreen().then(() => {
+                        if (isMobile && screen.orientation && screen.orientation.unlock) {
+                            screen.orientation.unlock();
+                        }
+                    }).catch(()=>{});
                 } else if (document.webkitExitFullscreen) {
                     document.webkitExitFullscreen();
                 }
@@ -691,6 +725,12 @@
         const tag = e.target.tagName.toLowerCase();
         // Prevent progressing if interacting with checkbox or label
         if (tag === 'input' || tag === 'label') return; 
+        
+        // Auto-fullscreen and force landscape on mobile
+        if (isMobile) {
+            goFullscreenAndLock();
+        }
+        
         proceedToInit();
     });
 
@@ -1530,9 +1570,9 @@
             hydras.forEach((h, index) => {
                 let localTimer = hydraPullTimer;
                 
-                // Decrease magnetic pull delay by 5 seconds on the second hydra on Marine difficulty
-                if (diff.name === 'Marine' && index === 1) {
-                    localTimer += 5;
+                // Decrease magnetic pull delay by 5 seconds on the second hydra on Operator difficulty
+                if (diff.name === 'Operator' && index === 1) {
+                    localTimer += 18;
                 }
 
                 let cycleTime = localTimer % 30;
