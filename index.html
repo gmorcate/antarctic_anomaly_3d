@@ -378,27 +378,47 @@
         masterGain.connect(globalGain);
         
         if(type === 'timpani') {
-            masterGain.gain.value = 2.5; 
+            masterGain.gain.value = 1.0; 
+            let tick = 0;
             let oscs = [];
-            const interval = setInterval(() => {
+            
+            // 1. Isolate your exact original sound into a reusable function
+            const playTimpani = (vol) => {
                 if (audioCtx.state === 'suspended') return;
                 const osc = audioCtx.createOscillator();
                 osc.type = 'sine';
+                
+                // Your original frequency drop
                 osc.frequency.setValueAtTime(100, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.5);
+                osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.4);
                 
                 const gain = audioCtx.createGain();
-                gain.gain.setValueAtTime(2.5, audioCtx.currentTime); 
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                // Your original 2.5 volume, multiplied by the beat emphasis
+                gain.gain.setValueAtTime(2.5 * vol, audioCtx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
                 
                 osc.connect(gain); gain.connect(masterGain);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
                 oscs.push(osc);
+                
                 setTimeout(() => {
                     const idx = oscs.indexOf(osc);
                     if(idx > -1) oscs.splice(idx, 1);
-                }, 600);
-            }, 800); 
+                }, 500);
+            };
+
+            // 2. Loop it using a fast, 8-step military rhythm
+            const interval = setInterval(() => {
+                const step = tick % 8;
+                
+                // Rhythm: BOOM - bop - BOOM - bop-bop
+                if (step === 0 || step === 4) playTimpani(1.0);       // Strong beats
+                else if (step === 2 || step === 6) playTimpani(0.5);  // Normal beats
+                else if (step === 7) playTimpani(0.3);                // Quick ghost note/pickup
+                
+                tick++;
+            }, 150); // Speed of the march
+
             bgmNode = { 
                 stop: () => { 
                     clearInterval(interval); 
