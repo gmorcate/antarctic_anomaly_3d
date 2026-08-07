@@ -443,11 +443,11 @@
             const noise = audioCtx.createBufferSource();
             noise.buffer = noiseBuffer; noise.loop = true;
             const filter = audioCtx.createBiquadFilter();
-            filter.type = 'bandpass'; filter.frequency.value = 200;
+            filter.type = 'bandpass'; filter.frequency.value = 600;
             const lfo = audioCtx.createOscillator();
             lfo.type = 'sine'; lfo.frequency.value = 0.1;
             const lfoGain = audioCtx.createGain();
-            lfoGain.gain.value = 600;
+            lfoGain.gain.value = 400;
             lfo.connect(lfoGain); lfoGain.connect(filter.frequency);
             noise.connect(filter); filter.connect(masterGain);
             noise.start(); lfo.start();
