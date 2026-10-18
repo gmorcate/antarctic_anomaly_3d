@@ -216,7 +216,7 @@
                 <div class="diff-container" id="difficultySelect" style="margin-bottom: 0;">
                     <label id="lblSci"><input type="radio" name="difficulty" value="0" id="radSci" checked> <span id="spanSci">Scientist (Easy)</span></label>
                     <label id="lblExp"><input type="radio" name="difficulty" value="1" id="radExp"> <span id="spanExp">Explorer (Medium)</span></label>
-                    <label id="lblMar"><input type="radio" name="difficulty" value="2" id="radMar"> <span id="spanMar">Operator (Hard)</span></label>
+                    <label id="lblMar"><input type="radio" name="difficulty" value="2" id="radMar"> <span id="spanMar">Operator (Hard + Extra Level)</span></label>
                 </div>
 
                 <button class="btn" id="startBtn" style="margin: 0; white-space: nowrap;">Start Mission</button>
@@ -322,7 +322,7 @@
 
         if (progress < 1) {
             radExp.disabled = true;
-            document.getElementById('spanExp').innerText = "Explorer (Medium) [LOCKED]";
+            document.getElementById('spanExp').innerText = "Explorer (Medium) [🔐]";
             lblExp.style.opacity = "0.5";
             lblExp.style.pointerEvents = "none";
         } else {
@@ -334,7 +334,7 @@
 
         if (progress < 2) {
             radMar.disabled = true;
-            document.getElementById('spanMar').innerText = "Operator (Hard) [LOCKED]";
+            document.getElementById('spanMar').innerText = "Operator (Hard) [🔐]";
             lblMar.style.opacity = "0.5";
             lblMar.style.pointerEvents = "none";
         } else {
